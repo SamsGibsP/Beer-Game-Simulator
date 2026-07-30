@@ -9,7 +9,59 @@
 </head>
 <body class="bg-gray-100 min-h-screen font-sans p-4 sm:p-8 flex items-center justify-center">
 
-  <div class="max-w-2xl w-full">
+  <!-- Tutorial & Agreement Modal -->
+  <div id="tutorialModal" class="max-w-3xl w-full bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="bg-blue-600 p-6 text-center">
+      <h1 class="text-2xl font-black text-white">Panduan Bermain DRP Beer Game</h1>
+      <p class="text-blue-100">Wajib baca sebelum mulai permainan!</p>
+    </div>
+    
+    <div class="p-6 overflow-y-auto flex-grow text-gray-700">
+      <h2 class="text-xl font-bold mb-3">Tujuan Permainan</h2>
+      <p class="mb-4">Memahami fenomena <strong>Bullwhip Effect</strong> dan belajar mengelola inventori rantai pasok multi-eselon agar total biaya seefisien mungkin.</p>
+      
+      <h2 class="text-xl font-bold mb-3">Alur 4 Langkah per Minggu:</h2>
+      <ol class="list-decimal pl-5 mb-6 space-y-2">
+        <li><strong>Terima Barang (Slide):</strong> Pesanan Anda 2 minggu lalu akhirnya tiba dari hulu.</li>
+        <li><strong>Penuhi Pesanan (Fill Orders):</strong> Penuhi pesanan pelanggan/eselon hilir menggunakan stok Anda. Jika kurang, akan menjadi <strong>Backlog</strong> (utang yang harus dikirim nanti).</li>
+        <li><strong>Pesan Barang Baru (Place Orders):</strong> Tentukan berapa banyak Anda akan memesan ke eselon hulu. (Pesanan tidak bisa dibatalkan/irreversible, minimal 0).</li>
+        <li><strong>Pencatatan Biaya:</strong> Akumulasi <em>Holding Cost</em> (Rp500/unit) dan <em>Backlog Cost</em> (Rp1.000/unit).</li>
+      </ol>
+
+      <div class="bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
+        <h3 class="font-bold text-red-600">ATURAN UTAMA:</h3>
+        <p class="text-red-700 text-sm">Dilarang keras berkomunikasi atau memberikan isyarat antar pemain/eselon. Keputusan dibuat secara serentak (simultan).</p>
+      </div>
+
+      <h2 class="text-xl font-bold mb-3">Lembar Persetujuan:</h2>
+      <div class="space-y-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" class="tutorial-checkbox mt-1 w-5 h-5 text-blue-600" onchange="validateChecklist()">
+          <span class="text-sm">Saya memahami peran saya dalam rantai pasok dan aturan larangan komunikasi antar eselon.</span>
+        </label>
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" class="tutorial-checkbox mt-1 w-5 h-5 text-blue-600" onchange="validateChecklist()">
+          <span class="text-sm">Saya mengerti bahwa pengiriman barang memiliki <strong>lead time (delay) selama 2 minggu</strong>.</span>
+        </label>
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" class="tutorial-checkbox mt-1 w-5 h-5 text-blue-600" onchange="validateChecklist()">
+          <span class="text-sm">Saya paham bahwa <strong>backlog (kekurangan stok) akan mengenakan penalti biaya besar (Rp1.000/unit)</strong>.</span>
+        </label>
+        <label class="flex items-start space-x-3 cursor-pointer">
+          <input type="checkbox" class="tutorial-checkbox mt-1 w-5 h-5 text-blue-600" onchange="validateChecklist()">
+          <span class="text-sm">Saya siap mengikuti instruksi permainan secara serentak per ronde.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="p-6 bg-gray-50 border-t border-gray-200 text-center">
+      <button id="btnReady" disabled onclick="agreeAndReady()" class="w-full bg-gray-400 text-white font-bold py-4 rounded-xl transition duration-200 text-lg shadow-lg cursor-not-allowed">
+        Saya Siap & Mengerti (Mulai Bermain)
+      </button>
+    </div>
+  </div>
+
+  <div id="mainPlayerUI" class="max-w-2xl w-full hidden">
     
     <!-- Header -->
     <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-600">
@@ -128,8 +180,34 @@
 
     socket.emit('joinRoom', { roomCode, role, playerName });
 
+    function validateChecklist() {
+      const checkboxes = document.querySelectorAll('.tutorial-checkbox');
+      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+      const btn = document.getElementById('btnReady');
+      if (allChecked) {
+        btn.disabled = false;
+        btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+      } else {
+        btn.disabled = true;
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+      }
+    }
+
+    function agreeAndReady() {
+      document.getElementById('tutorialModal').classList.add('hidden');
+      document.getElementById('mainPlayerUI').classList.remove('hidden');
+      socket.emit('playerReady', { roomCode, role });
+    }
+
     socket.on('error', (msg) => {
       alert(msg);
+      window.location.href = 'index.html';
+    });
+
+    socket.on('kicked', () => {
+      alert('Anda telah dikeluarkan dari ruang oleh Host.');
       window.location.href = 'index.html';
     });
 

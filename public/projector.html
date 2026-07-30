@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Layar Proyektor - LPOGames</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen font-sans p-8 flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="flex justify-between items-center mb-10 border-b-4 border-gray-700 pb-6">
+    <div>
+      <h1 class="text-6xl font-black text-blue-400 mb-2 tracking-tight" id="roomNameDisplay">Memuat Ruang...</h1>
+      <p class="text-3xl text-gray-400 font-bold uppercase tracking-widest">KODE: <span id="roomCodeDisplay"
+          class="text-white bg-gray-800 px-4 py-1 rounded">----</span></p>
+    </div>
+    <div class="text-right">
+      <h2 class="text-5xl font-black text-yellow-400">MINGGU <span id="roundDisplay">0</span> <span
+          class="text-3xl text-gray-500">/ <span id="maxRoundsDisplay">0</span></span></h2>
+      <div id="timerContainer"
+        class="hidden mt-4 inline-block bg-red-600 text-white text-4xl font-black px-6 py-2 rounded-xl shadow-lg border-2 border-red-400">
+        <span id="timerDisplay">00:00</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Demand Info (Customer) -->
+  <div class="text-center mb-10">
+    <div class="inline-block bg-gray-800 border-2 border-blue-500 p-6 rounded-3xl shadow-2xl">
+      <p class="text-2xl text-blue-300 font-bold uppercase tracking-widest mb-2">Permintaan Konsumen (Demand)</p>
+      <p class="text-7xl font-black text-white" id="customerDemand">?</p>
+    </div>
+  </div>
+
+  <!-- Main Status Grid -->
+  <div class="grid grid-cols-4 gap-8 flex-grow">
+
+    <!-- Retailer -->
+    <div class="bg-gray-800 rounded-3xl p-6 border-4 border-gray-700 shadow-2xl flex flex-col relative"
+      id="card-Retailer">
+      <div class="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500" id="conn-Retailer"></div>
+      <h3 class="text-4xl font-black text-gray-300 text-center mb-8 border-b-2 border-gray-700 pb-4">RETAILER</h3>
+      <div class="flex-grow flex flex-col justify-around">
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Inventori</p>
+          <p class="text-6xl font-black text-blue-400" id="inv-Retailer">0</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Backlog</p>
+          <p class="text-6xl font-black text-red-500" id="bklg-Retailer">0</p>
+        </div>
+      </div>
+      <div class="mt-6 bg-gray-900 p-4 rounded-xl text-center">
+        <p class="text-2xl font-bold text-gray-500" id="status-Retailer">Menunggu...</p>
+      </div>
+    </div>
+
+    <!-- Wholesaler -->
+    <div class="bg-gray-800 rounded-3xl p-6 border-4 border-gray-700 shadow-2xl flex flex-col relative"
+      id="card-Wholesaler">
+      <div class="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500" id="conn-Wholesaler"></div>
+      <h3 class="text-4xl font-black text-gray-300 text-center mb-8 border-b-2 border-gray-700 pb-4">WHOLESALER</h3>
+      <div class="flex-grow flex flex-col justify-around">
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Inventori</p>
+          <p class="text-6xl font-black text-blue-400" id="inv-Wholesaler">0</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Backlog</p>
+          <p class="text-6xl font-black text-red-500" id="bklg-Wholesaler">0</p>
+        </div>
+      </div>
+      <div class="mt-6 bg-gray-900 p-4 rounded-xl text-center">
+        <p class="text-2xl font-bold text-gray-500" id="status-Wholesaler">Menunggu...</p>
+      </div>
+    </div>
+
+    <!-- Distributor -->
+    <div class="bg-gray-800 rounded-3xl p-6 border-4 border-gray-700 shadow-2xl flex flex-col relative"
+      id="card-Distributor">
+      <div class="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500" id="conn-Distributor"></div>
+      <h3 class="text-4xl font-black text-gray-300 text-center mb-8 border-b-2 border-gray-700 pb-4">DISTRIBUTOR</h3>
+      <div class="flex-grow flex flex-col justify-around">
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Inventori</p>
+          <p class="text-6xl font-black text-blue-400" id="inv-Distributor">0</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Backlog</p>
+          <p class="text-6xl font-black text-red-500" id="bklg-Distributor">0</p>
+        </div>
+      </div>
+      <div class="mt-6 bg-gray-900 p-4 rounded-xl text-center">
+        <p class="text-2xl font-bold text-gray-500" id="status-Distributor">Menunggu...</p>
+      </div>
+    </div>
+
+    <!-- Factory -->
+    <div class="bg-gray-800 rounded-3xl p-6 border-4 border-gray-700 shadow-2xl flex flex-col relative"
+      id="card-Factory">
+      <div class="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500" id="conn-Factory"></div>
+      <h3 class="text-4xl font-black text-gray-300 text-center mb-8 border-b-2 border-gray-700 pb-4">FACTORY</h3>
+      <div class="flex-grow flex flex-col justify-around">
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Inventori</p>
+          <p class="text-6xl font-black text-blue-400" id="inv-Factory">0</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xl text-gray-400 font-bold uppercase tracking-widest mb-2">Backlog</p>
+          <p class="text-6xl font-black text-red-500" id="bklg-Factory">0</p>
+        </div>
+      </div>
+      <div class="mt-6 bg-gray-900 p-4 rounded-xl text-center">
+        <p class="text-2xl font-bold text-gray-500" id="status-Factory">Menunggu...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const socket = io();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+    if (!roomCode) {
+      alert('Room code is missing!');
+      window.location.href = 'index.html';
+    }
+
+    // Join as Projector
+    socket.emit('joinRoom', { roomCode, role: 'Projector', playerName: 'Projector' });
+
+    socket.on('joined', (data) => {
+      document.getElementById('roomCodeDisplay').innerText = data.roomCode;
+      document.getElementById('roomNameDisplay').innerText = data.roomName || 'Simulasi Rantai Pasok';
+      if (data.round) {
+        document.getElementById('roundDisplay').innerText = data.round;
+        document.getElementById('maxRoundsDisplay').innerText = data.maxRounds;
+        updateStateUI(data.state);
+      }
+    });
+
+    socket.on('error', (msg) => {
+      alert('Error: ' + msg);
+    });
+
+    socket.on('gameStarted', ({ maxRounds, timerDuration, round, state }) => {
+      document.getElementById('maxRoundsDisplay').innerText = maxRounds;
+      document.getElementById('roundDisplay').innerText = round;
+      if (timerDuration > 0) {
+        document.getElementById('timerContainer').classList.remove('hidden');
+      }
+      updateStateUI(state);
+      resetStatus();
+    });
+
+    socket.on('newRound', ({ round, state }) => {
+      document.getElementById('roundDisplay').innerText = round;
+      updateStateUI(state);
+      resetStatus();
+      document.getElementById('customerDemand').innerText = '?';
+    });
+
+    socket.on('timerUpdate', ({ timeRemaining }) => {
+      const minutes = Math.floor(timeRemaining / 60);
+      const seconds = timeRemaining % 60;
+      document.getElementById('timerDisplay').innerText =
+        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    });
+
+    socket.on('playerOrdered', ({ role, orderAmount }) => {
+      if (role === 'Customer') {
+        document.getElementById('customerDemand').innerText = orderAmount;
+      } else {
+        const statusEl = document.getElementById(`status-${role}`);
+        if (statusEl) {
+          statusEl.innerText = 'Selesai';
+          statusEl.className = 'text-3xl font-black text-green-400';
+          document.getElementById(`card-${role}`).classList.add('border-green-500');
+        }
+      }
+    });
+
+    // Handle connection indicator
+    socket.on('projectorUpdate', (data) => {
+      if (data.type === 'playerJoined') {
+        const dot = document.getElementById(`conn-${data.role}`);
+        if (dot) dot.className = 'absolute top-4 right-4 w-6 h-6 rounded-full bg-yellow-400 shadow-[0_0_15px_#facc15]';
+      }
+    });
+
+    socket.on('playerIsReady', ({ role }) => {
+      const dot = document.getElementById(`conn-${role}`);
+      if (dot) dot.className = 'absolute top-4 right-4 w-6 h-6 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e]';
+    });
+
+    socket.on('playerKicked', ({ role }) => {
+      const dot = document.getElementById(`conn-${role}`);
+      if (dot) dot.className = 'absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500';
+    });
+
+    socket.on('gameFinished', () => {
+      alert("Permainan Selesai!");
+      // Optionally redirect or show result screen
+    });
+
+    function updateStateUI(state) {
+      if (!state) return;
+      const roles = ['Retailer', 'Wholesaler', 'Distributor', 'Factory'];
+      roles.forEach(r => {
+        if (state[r]) {
+          document.getElementById(`inv-${r}`).innerText = state[r].inventory;
+          document.getElementById(`bklg-${r}`).innerText = state[r].backlog;
+        }
+      });
+    }
+
+    function resetStatus() {
+      const roles = ['Retailer', 'Wholesaler', 'Distributor', 'Factory'];
+      roles.forEach(r => {
+        const statusEl = document.getElementById(`status-${r}`);
+        if (statusEl) {
+          statusEl.innerText = 'Menulis...';
+          statusEl.className = 'text-3xl font-black text-yellow-400 animate-pulse';
+          document.getElementById(`card-${r}`).classList.remove('border-green-500');
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
