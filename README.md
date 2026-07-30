@@ -1,12 +1,12 @@
-# Blitz Beer Game Simulator
+# Blitz Beer Game Simulator (DRP Version)
 
-Aplikasi web interaktif *real-time* untuk mensimulasikan fenomena *Bullwhip Effect* (Efek Cambuk) pada rantai pasok. Didesain secara khusus untuk durasi singkat (sekitar 8 menit) sebagai bagian dari kegiatan *lab tour* mahasiswa baru.
+Aplikasi web interaktif *real-time* untuk mensimulasikan fenomena *Bullwhip Effect* (Efek Cambuk) pada rantai pasok multi-eselon, didesain persis dengan standar Modul 1: Pengantar Distribution Requirement Planning (Skenario Krisis Kerupuk Palembang).
 
-## 🎯 Fitur
-- **Real-time Multiplayer:** Komunikasi instan antar node (peran) menggunakan Socket.io.
-- **4 Ronde Cepat:** Skenario perubahan *demand* dirancang khusus oleh *Host* untuk memicu distorsi pesanan secara cepat.
-- **Visualisasi Langsung:** Menampilkan grafik interaktif *Line Chart* di akhir permainan untuk membuktikan *Bullwhip Effect* secara instan.
-- **Modern UI:** Antarmuka responsif dan bersih dengan Tailwind CSS.
+## 🎯 Fitur & Pembaruan
+- **Giliran Serentak (Simultan):** Seluruh pemain memasukkan pesanan di waktu yang sama, mensimulasikan lingkungan rantai pasok di mana informasi tidak bergerak instan ke seluruh rantai, melainkan diputuskan bersama berdasarkan *demand* periode tersebut.
+- **Pipeline Delay:** Terdapat *Shipping/Production delay* selama 2 minggu (barang tiba di SD2, lalu SD1, lalu masuk ke inventori).
+- **Backlog & Costing:** Melacak tumpukan backlog dan biaya secara akurat per minggunya (Rp500 untuk *Holding Cost* dan Rp1000 untuk *Backlog Cost*).
+- **Dashboard Analitik Lengkap:** Di akhir 25 minggu, menampilkan *Inventory Records Sheet* (IRS), grafik Bullwhip, total biaya, dan KPI lainnya.
 
 ## 🛠️ Prasyarat
 - Node.js (versi 14 atau lebih baru)
@@ -23,28 +23,17 @@ Aplikasi web interaktif *real-time* untuk mensimulasikan fenomena *Bullwhip Effe
    ```bash
    node server.js
    ```
-4. Buka browser dan arahkan ke: `http://localhost:3001`
+4. Buka browser dan arahkan ke: `http://localhost:3001` (atau port lain yang tertera di log terminal jika 3001 sedang dipakai).
 
 ## 👥 Alur Permainan
-1. **Asisten Lab (Host)** membuka aplikasi dan menekan **"Create New Room"**. Layar Host akan menampilkan *Room Code*.
-2. **4 Mahasiswa** membuka aplikasi, memasukkan *Room Code*, dan masing-masing memilih satu peran:
-   - Retailer (Pengecer)
-   - Wholesaler (Grosir)
-   - Distributor
-   - Factory (Pabrik)
-3. Setelah semua pemain bergabung, Host menekan **"Start Game"**.
-4. **Giliran Berurutan (Ronde 1 - 4):**
-   - **Customer (Host)** memasukkan demand.
-   - Pesanan tersebut muncul di layar **Retailer**. Retailer lalu memasukkan pesanannya.
-   - Pesanan Retailer muncul di layar **Wholesaler**, dan seterusnya hingga **Factory**.
-   - Setelah Factory mengirim pesanan, Ronde selesai. Host dapat melanjutkan ke Ronde Berikutnya.
-5. Setelah 4 ronde selesai, layar semua orang akan menampilkan **Dashboard Analitik** (*Aha! Moment*) berupa grafik lonjakan pesanan.
+1. **Asisten Lab (Host)** membuka aplikasi, menekan **"Create New Room"**, dan membagikan *Room Code*.
+2. **4 Mahasiswa** bergabung menggunakan *Room Code* dan memilih peran: Retailer, Wholesaler, Distributor, atau Factory.
+3. Setelah semua tergabung, Host menekan **"Mulai Game"**.
+4. **Giliran (Minggu 1 hingga 25):**
+   - Host (berperan sebagai Customer) memasukkan jumlah permintaan. Secara *default*, minggu 1-4 stabil di angka 4 unit, dan minggu 5 ke atas menjadi 8 unit.
+   - Ke-4 pemain (Eselon 1-4) melihat layar dasbor mereka yang menampilkan **Inventori, Backlog, Barang di Perjalanan (SD1, SD2), dan Pesanan Masuk (Incoming Order)**.
+   - Semua pemain memasukkan jumlah "Pesanan Keluar" dan menekan **Kirim**.
+   - Setelah 5 orang (termasuk Host) mengirimkan angkanya, server secara otomatis akan memproses siklus rantai pasok dan melompat ke minggu berikutnya.
+5. Permainan selesai di Minggu ke-25 dan akan mengarahkan semua orang ke Dasbor Analitik Akhir.
 
-## 💡 Skenario Rekomendasi (Demand Host)
-Untuk memicu *Bullwhip Effect* secara efektif, Host direkomendasikan memberi input demand:
-- **Ronde 1:** 4
-- **Ronde 2:** 8 (Lonjakan tajam)
-- **Ronde 3:** 4 (Turun kembali, membuat pemain panik stok menumpuk)
-- **Ronde 4:** 4 
-
-Selamat bermain!
+Selamat Bermain!
