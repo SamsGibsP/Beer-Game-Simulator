@@ -1,6 +1,6 @@
-# Blitz Beer Game Simulator (DRP Version)
+# Blitz Beer Game Simulator
 
-Aplikasi web interaktif *real-time* untuk mensimulasikan fenomena *Bullwhip Effect* (Efek Cambuk) pada rantai pasok multi-eselon, didesain persis dengan standar Modul 1: Pengantar Distribution Requirement Planning (Skenario Krisis Kerupuk Palembang).
+Aplikasi web interaktif *real-time* untuk mensimulasikan fenomena *Bullwhip Effect* (Efek Cambuk) pada rantai pasok multi-eselon, didesain persis dengan standar MIT School of Loan.
 
 ## 🎯 Fitur & Pembaruan
 - **Giliran Serentak (Simultan):** Seluruh pemain memasukkan pesanan di waktu yang sama, mensimulasikan lingkungan rantai pasok di mana informasi tidak bergerak instan ke seluruh rantai, melainkan diputuskan bersama berdasarkan *demand* periode tersebut.
