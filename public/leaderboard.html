@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Leaderboard - Blitz Beer Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans p-4 sm:p-8">
+
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-yellow-500 text-center">
+      <h1 class="text-3xl font-black text-gray-800 mb-2">🏆 Leaderboard Global</h1>
+      <p class="text-gray-500 font-medium">Peringkat Kelompok Berdasarkan Efisiensi Biaya</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-b-2xl shadow p-6 sm:p-8 min-h-[400px]">
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
+              <th class="py-3 px-6 text-center">Peringkat</th>
+              <th class="py-3 px-6 text-left">Nama Ruang / Kelompok</th>
+              <th class="py-3 px-6 text-center">Total Biaya</th>
+              <th class="py-3 px-6 text-center">Service Level</th>
+              <th class="py-3 px-6 text-center">Waktu Main</th>
+              <th class="py-3 px-6 text-center">Aksi (Admin)</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody" class="text-gray-600 text-sm font-light">
+            <tr>
+              <td colspan="5" class="py-10 text-center font-bold text-gray-400 text-lg">Memuat data leaderboard...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-8 flex justify-center gap-4">
+        <a href="index.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 shadow-md">
+          Kembali ke Beranda
+        </a>
+        <button onclick="resetLeaderboard()" class="inline-block bg-red-100 hover:bg-red-200 text-red-600 font-bold py-3 px-8 rounded-xl transition duration-200 border border-red-200">
+          Reset Seluruh Leaderboard
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    async function fetchLeaderboard() {
+      try {
+        const response = await fetch('/api/leaderboard');
+        const data = await response.json();
+        const tbody = document.getElementById('leaderboardBody');
+        
+        if (data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-10 text-center font-bold text-gray-400 text-lg">Belum ada game yang diselesaikan.</td></tr>';
+          return;
+        }
+
+        let html = '';
+        data.forEach((entry, idx) => {
+          const rank = idx + 1;
+          const cost = 'Rp ' + parseInt(entry.cost).toLocaleString('id-ID');
+          const service = entry.serviceLevel + '%';
+          const date = new Date(entry.date).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+          
+          let rankHtml = rank;
+          if (rank === 1) rankHtml = '<span class="text-2xl">🥇</span>';
+          else if (rank === 2) rankHtml = '<span class="text-2xl">🥈</span>';
+          else if (rank === 3) rankHtml = '<span class="text-2xl">🥉</span>';
+
+          html += `
+            <tr class="border-b border-gray-200 hover:bg-yellow-50 transition duration-150">
+              <td class="py-4 px-6 text-center font-bold text-lg">${rankHtml}</td>
+              <td class="py-4 px-6 text-left font-bold text-gray-800">${entry.roomName}</td>
+              <td class="py-4 px-6 text-center font-black text-red-600">${cost}</td>
+              <td class="py-4 px-6 text-center font-bold text-blue-600">${service}</td>
+              <td class="py-4 px-6 text-center text-gray-500 text-xs">${date}</td>
+              <td class="py-4 px-6 text-center">
+                <button onclick="deleteItem(${idx})" class="text-xs bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded shadow transition-colors">Hapus</button>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      } catch (err) {
+        document.getElementById('leaderboardBody').innerHTML = '<tr><td colspan="6" class="py-10 text-center font-bold text-red-400 text-lg">Gagal memuat data.</td></tr>';
+      }
+    }
+
+    async function resetLeaderboard() {
+      const pwd = prompt("Masukkan Kata Sandi Admin untuk mereset seluruh leaderboard:");
+      if (!pwd) return;
+
+      if (confirm("PERINGATAN: Aksi ini akan menghapus SELURUH riwayat skor secara permanen. Lanjutkan?")) {
+        try {
+          const res = await fetch('/api/leaderboard/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+          });
+          if (res.ok) {
+            alert('Leaderboard berhasil direset.');
+            fetchLeaderboard();
+          } else {
+            alert('Gagal: Kata sandi salah atau tidak diotorisasi.');
+          }
+        } catch (e) {
+          alert('Terjadi kesalahan jaringan.');
+        }
+      }
+    }
+
+    async function deleteItem(index) {
+      const pwd = prompt("Masukkan Kata Sandi Admin untuk menghapus baris ini:");
+      if (!pwd) return;
+
+      if (confirm("Hapus baris ini secara permanen?")) {
+        try {
+          const res = await fetch('/api/leaderboard/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd, index: index })
+          });
+          if (res.ok) {
+            fetchLeaderboard();
+          } else {
+            alert('Gagal: Kata sandi salah atau tidak diotorisasi.');
+          }
+        } catch (e) {
+          alert('Terjadi kesalahan jaringan.');
+        }
+      }
+    }
+
+    fetchLeaderboard();
+  </script>
+</body>
+</html>
