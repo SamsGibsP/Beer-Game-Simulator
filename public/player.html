@@ -12,19 +12,30 @@
   <div class="max-w-2xl w-full">
     
     <!-- Header -->
-    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-600 text-center flex justify-between items-center">
-      <div class="text-left">
-        <h1 class="text-2xl font-black text-gray-800" id="roleDisplay">Loading Role...</h1>
-        <p class="text-gray-500 font-medium">Room: <span id="roomDisplay" class="text-blue-600 font-bold tracking-widest">---</span></p>
-      </div>
-      <div class="text-right">
-        <div class="text-sm text-gray-500 font-bold uppercase tracking-wider">Minggu Ke</div>
-        <div class="text-4xl font-black text-blue-600" id="roundDisplay">-</div>
-      </div>
+    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-600">
+        <!-- Header Info -->
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h2 class="text-3xl font-black text-gray-800">Minggu Ke-<span id="roundDisplay">1</span> / <span id="maxRoundsDisplay">25</span></h2>
+            <p class="text-gray-500 font-semibold" id="roomDisplay">----</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Peran Anda</p>
+            <div class="text-2xl font-black text-blue-600 bg-blue-100 py-1 px-4 rounded-xl" id="roleDisplay">--</div>
+          </div>
+        </div>
     </div>
 
     <!-- Main Content -->
     <div class="bg-white rounded-b-2xl shadow p-6 sm:p-8 min-h-[400px] flex flex-col justify-center">
+      
+      <!-- Timer -->
+      <div id="timerContainer" class="hidden flex justify-center mb-6">
+        <div class="bg-red-100 text-red-600 font-black text-2xl px-6 py-2 rounded-full border-2 border-red-300 shadow-inner flex items-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span id="timerDisplay">00:00</span>
+        </div>
+      </div>
       
       <!-- Waiting Screen -->
       <div id="waitingScreen">
@@ -43,33 +54,38 @@
         <!-- Status Cards -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           
-          <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100">
-            <p class="text-xs text-blue-600 font-bold uppercase mb-1">Inventori</p>
+          <div class="bg-blue-50 rounded-xl p-4 text-center border border-blue-100 relative group">
+            <p class="text-xs text-blue-600 font-bold uppercase mb-1 flex items-center justify-center">Inventori <span class="ml-1 cursor-help text-blue-400">ⓘ</span></p>
             <p class="text-3xl font-black text-blue-800" id="valInv">0</p>
+            <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded z-10 shadow-lg">Barang fisik di gudang saat ini.</div>
           </div>
           
-          <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100">
-            <p class="text-xs text-red-600 font-bold uppercase mb-1">Backlog</p>
+          <div class="bg-red-50 rounded-xl p-4 text-center border border-red-100 relative group">
+            <p class="text-xs text-red-600 font-bold uppercase mb-1 flex items-center justify-center">Backlog <span class="ml-1 cursor-help text-red-400">ⓘ</span></p>
             <p class="text-3xl font-black text-red-800" id="valBacklog">0</p>
+            <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded z-10 shadow-lg">Utang pesanan karena stok habis.</div>
           </div>
           
-          <div class="bg-amber-50 rounded-xl p-4 text-center border border-amber-100">
-            <p class="text-xs text-amber-600 font-bold uppercase mb-1">Tiba Mg Depan (SD2)</p>
+          <div class="bg-amber-50 rounded-xl p-4 text-center border border-amber-100 relative group">
+            <p class="text-xs text-amber-600 font-bold uppercase mb-1 flex items-center justify-center">Tiba Mg Depan (SD2) <span class="ml-1 cursor-help text-amber-400">ⓘ</span></p>
             <p class="text-3xl font-black text-amber-800" id="valSD2">0</p>
+            <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded z-10 shadow-lg">Kargo kiriman tiba minggu depan.</div>
           </div>
           
-          <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-200">
-            <p class="text-xs text-gray-600 font-bold uppercase mb-1">Tiba 2 Mg Lagi (SD1)</p>
+          <div class="bg-gray-50 rounded-xl p-4 text-center border border-gray-200 relative group">
+            <p class="text-xs text-gray-600 font-bold uppercase mb-1 flex items-center justify-center">Tiba 2 Mg Lagi (SD1) <span class="ml-1 cursor-help text-gray-400">ⓘ</span></p>
             <p class="text-3xl font-black text-gray-800" id="valSD1">0</p>
+            <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded z-10 shadow-lg">Kargo tiba 2 minggu lagi.</div>
           </div>
 
         </div>
 
         <!-- Incoming Order -->
-        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 mb-8 text-center shadow-inner">
-          <p class="text-indigo-800 font-bold mb-1 uppercase tracking-wider text-sm">Pesanan Masuk Minggu Ini</p>
+        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 mb-8 text-center shadow-inner relative group">
+          <p class="text-indigo-800 font-bold mb-1 uppercase tracking-wider text-sm flex items-center justify-center">Pesanan Masuk Minggu Ini <span class="ml-1 cursor-help text-indigo-400">ⓘ</span></p>
           <div class="text-6xl font-black text-indigo-600 my-2" id="valIncoming">0</div>
           <p class="text-indigo-500 text-sm">Harus dipenuhi dari inventori Anda.</p>
+          <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded z-10 shadow-lg max-w-xs mx-auto">Barang yang diminta oleh pembeli minggu ini.</div>
         </div>
 
         <!-- Order Form -->
@@ -106,6 +122,10 @@
     document.getElementById('roleDisplay').innerText = role;
     document.getElementById('roomDisplay').innerText = roomCode;
 
+    let lastOrderAmount = 0;
+    let timerInterval = null;
+    let timeRemaining = 0;
+
     socket.emit('joinRoom', { roomCode, role, playerName });
 
     socket.on('error', (msg) => {
@@ -113,16 +133,24 @@
       window.location.href = 'index.html';
     });
 
-    socket.on('gameStarted', ({ round, state }) => {
-      startRound(round, state);
+    socket.on('gameStartedForPlayer', ({ finalRole, round, state, timerDuration, maxRounds }) => {
+      if (finalRole !== role) {
+        alert("Perhatian: Sesuai instruksi Host, peran Anda diacak. Anda mendapatkan peran: " + finalRole);
+        role = finalRole;
+        document.getElementById('roleDisplay').innerText = role;
+      }
+      startRound(round, state, timerDuration, maxRounds);
     });
 
-    socket.on('newRound', ({ round, state }) => {
-      startRound(round, state);
+    socket.on('newRound', ({ round, state, timerDuration, maxRounds }) => {
+      startRound(round, state, timerDuration, maxRounds);
     });
 
-    function startRound(round, fullState) {
+    function startRound(round, fullState, timerDuration, maxRounds) {
       document.getElementById('roundDisplay').innerText = round;
+      if (maxRounds) {
+        document.getElementById('maxRoundsDisplay').innerText = maxRounds;
+      }
       
       const myState = fullState[role];
       
@@ -135,27 +163,64 @@
       document.getElementById('waitingScreen').classList.add('hidden');
       document.getElementById('actionScreen').classList.remove('hidden');
       
+      // Manage Timer
+      if (timerDuration > 0) {
+        document.getElementById('timerContainer').classList.remove('hidden');
+        timeRemaining = timerDuration;
+        updateTimerDisplay();
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          timeRemaining--;
+          updateTimerDisplay();
+          
+          if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            // Auto Submit
+            submitOrder(true);
+          }
+        }, 1000);
+      } else {
+        document.getElementById('timerContainer').classList.add('hidden');
+        clearInterval(timerInterval);
+      }
+
       const input = document.getElementById('orderInput');
       input.value = '';
       setTimeout(() => input.focus(), 100);
     }
 
+    function updateTimerDisplay() {
+      const min = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+      const sec = (timeRemaining % 60).toString().padStart(2, '0');
+      document.getElementById('timerDisplay').innerText = `${min}:${sec}`;
+    }
+
     function setWaiting(title, subtitle) {
+      clearInterval(timerInterval);
       document.getElementById('actionScreen').classList.add('hidden');
+      document.getElementById('timerContainer').classList.add('hidden');
       document.getElementById('waitingScreen').classList.remove('hidden');
       document.getElementById('waitingTitle').innerText = title;
       document.getElementById('waitingSubtitle').innerText = subtitle;
     }
 
-    function submitOrder() {
-      const val = parseInt(document.getElementById('orderInput').value);
-      if (isNaN(val) || val < 0) {
-        alert('Masukkan jumlah pesanan valid (minimal 0)!');
-        return;
+    function submitOrder(isAuto = false) {
+      let val = 0;
+      if (isAuto) {
+        val = lastOrderAmount;
+        // Just use the last order amount or 0
+      } else {
+        val = parseInt(document.getElementById('orderInput').value);
+        if (isNaN(val) || val < 0) {
+          alert('Masukkan jumlah pesanan valid (minimal 0)!');
+          return;
+        }
       }
       
+      lastOrderAmount = val;
       socket.emit('submitOrder', { roomCode, role, orderAmount: val });
-      setWaiting('Pesanan Terkirim!', 'Menunggu pemain lain memproses pesanan mereka...');
+      setWaiting(isAuto ? 'Waktu Habis!' : 'Pesanan Terkirim!', 'Menunggu pemain lain memproses pesanan mereka...');
     }
 
     socket.on('gameFinished', ({ history }) => {

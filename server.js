@@ -36,14 +36,14 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
   // HOST: Create Room
-  socket.on('createRoom', () => {
+  socket.on('createRoom', (data) => {
     const roomCode = generateRoomCode();
     rooms[roomCode] = {
       hostId: socket.id,
       players: { Retailer: null, Wholesaler: null, Distributor: null, Factory: null },
       playerNames: {},
       round: 0,
-      maxRounds: 25,
+      maxRounds: data?.maxRounds || 25,
       gameState: 'waiting', // waiting, in_progress, finished
       history: [], 
       state: {
@@ -52,7 +52,10 @@ io.on('connection', (socket) => {
         Wholesaler: getInitialRoleState(),
         Distributor: getInitialRoleState(),
         Factory: getInitialRoleState()
-      }
+      },
+      roomName: data?.roomName || 'Ruang Simulasi',
+      timerDuration: data?.timerDuration || 0,
+      randomizeRoles: data?.randomizeRoles || false
     };
     socket.join(roomCode);
     socket.emit('roomCreated', roomCode);
@@ -77,15 +80,65 @@ io.on('connection', (socket) => {
   });
 
   // HOST: Start Game
-  socket.on('startGame', (roomCode) => {
+  socket.on('startGame', ({ roomCode }) => {
     const room = rooms[roomCode];
     if (room && room.hostId === socket.id) {
       room.gameState = 'in_progress';
       room.round = 1;
+      
+      // Handle Role Shuffling
+      if (room.randomizeRoles) {
+        const currentPlayers = [];
+        for (const r of ROLES) {
+          if (room.players[r]) {
+            currentPlayers.push({ socketId: room.players[r], name: room.playerNames[r] });
+          }
+        }
+        
+        // Shuffle array
+        for (let i = currentPlayers.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [currentPlayers[i], currentPlayers[j]] = [currentPlayers[j], currentPlayers[i]];
+        }
+        
+        // Reassign
+        let idx = 0;
+        for (const r of ROLES) {
+          if (idx < currentPlayers.length) {
+            room.players[r] = currentPlayers[idx].socketId;
+            room.playerNames[r] = currentPlayers[idx].name;
+            idx++;
+          } else {
+            room.players[r] = null;
+            room.playerNames[r] = null;
+          }
+        }
+      }
+
       // Record initial state as week 0 history
       room.history.push(JSON.parse(JSON.stringify(room.state)));
       
-      io.to(roomCode).emit('gameStarted', { round: room.round, state: room.state });
+      // Notify host
+      socket.emit('gameStarted', { 
+        round: room.round, 
+        state: room.state, 
+        timerDuration: room.timerDuration,
+        maxRounds: room.maxRounds,
+        players: room.playerNames
+      });
+
+      // Notify each player personally
+      for (const r of ROLES) {
+        if (room.players[r]) {
+          io.to(room.players[r]).emit('gameStartedForPlayer', {
+            finalRole: r,
+            round: room.round,
+            state: room.state,
+            timerDuration: room.timerDuration,
+            maxRounds: room.maxRounds
+          });
+        }
+      }
     }
   });
 
@@ -104,7 +157,7 @@ io.on('connection', (socket) => {
     room.state[role].orderPlaced = orderAmount;
     
     // Notify host about submission status
-    io.to(room.hostId).emit('playerSubmitted', { role });
+    io.to(room.hostId).emit('playerSubmitted', { role, orderAmount });
     
     // Check if everyone has submitted
     const allSubmitted = 
@@ -188,7 +241,12 @@ io.on('connection', (socket) => {
       s.Factory.orderPlaced = null;
 
       room.round++;
-      io.to(roomCode).emit('newRound', { round: room.round, state: s });
+      io.to(roomCode).emit('newRound', { 
+        round: room.round, 
+        state: s, 
+        timerDuration: room.timerDuration,
+        maxRounds: room.maxRounds
+      });
     }
   }
 
