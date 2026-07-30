@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard - Blitz Beer Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans p-8">
+
+  <div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow p-8 mb-6 text-center border-b-4 border-blue-600">
+      <h1 class="text-4xl font-black text-gray-800 mb-2">Aha! Moment: Bullwhip Effect</h1>
+      <p class="text-gray-500 text-lg">Lihat bagaimana fluktuasi kecil di tingkat Customer menyebabkan distorsi pesanan ekstrem di tingkat Factory.</p>
+    </div>
+
+    <!-- Chart Container -->
+    <div class="bg-white rounded-2xl shadow p-8 mb-6">
+      <canvas id="bullwhipChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Explanation -->
+    <div class="bg-blue-50 rounded-2xl border-2 border-blue-200 p-8 text-blue-900">
+      <h3 class="font-bold text-xl mb-3 flex items-center">
+        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Apa yang terjadi?
+      </h3>
+      <p class="mb-4">
+        Grafik di atas menunjukkan volume pesanan di tiap tahap rantai pasok. Biasanya, pesanan dari <strong>Customer</strong> relatif stabil atau hanya sedikit berfluktuasi. Namun, setiap pemain di rantai pasok bereaksi berlebihan terhadap perubahan tersebut karena kepanikan dan kurangnya visibilitas (informasi).
+      </p>
+      <p>
+        Akibatnya, pabrik (<strong>Factory</strong>) mengalami lonjakan pesanan yang paling tajam. Inilah yang disebut dengan <strong>Bullwhip Effect (Efek Cambuk)</strong>.
+      </p>
+    </div>
+    
+    <div class="mt-8 text-center">
+      <a href="index.html" class="inline-block bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-8 rounded-xl transition duration-200">
+        Kembali ke Beranda
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    const historyStr = sessionStorage.getItem('gameHistory');
+    if (!historyStr) {
+      alert('Data permainan tidak ditemukan!');
+      window.location.href = 'index.html';
+    }
+
+    const historyData = JSON.parse(historyStr);
+    // historyData = [
+    //   { Customer: 4, Retailer: 4, Wholesaler: 4, Distributor: 4, Factory: 4 },
+    //   ...
+    // ]
+
+    const rounds = historyData.map((_, i) => 'Ronde ' + (i + 1));
+    
+    // Extract datasets
+    const customerData = historyData.map(r => r.Customer || 0);
+    const retailerData = historyData.map(r => r.Retailer || 0);
+    const wholesalerData = historyData.map(r => r.Wholesaler || 0);
+    const distributorData = historyData.map(r => r.Distributor || 0);
+    const factoryData = historyData.map(r => r.Factory || 0);
+
+    const ctx = document.getElementById('bullwhipChart').getContext('2d');
+    
+    // Smooth lines with tension for a nice visual
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: rounds,
+        datasets: [
+          {
+            label: 'Customer Demand',
+            data: customerData,
+            borderColor: '#10B981', // Green
+            backgroundColor: '#10B981',
+            tension: 0.3,
+            borderWidth: 3,
+            borderDash: [5, 5] // Dashed to indicate it's the source
+          },
+          {
+            label: 'Retailer Order',
+            data: retailerData,
+            borderColor: '#3B82F6', // Blue
+            backgroundColor: '#3B82F6',
+            tension: 0.3,
+            borderWidth: 3
+          },
+          {
+            label: 'Wholesaler Order',
+            data: wholesalerData,
+            borderColor: '#F59E0B', // Yellow
+            backgroundColor: '#F59E0B',
+            tension: 0.3,
+            borderWidth: 3
+          },
+          {
+            label: 'Distributor Order',
+            data: distributorData,
+            borderColor: '#8B5CF6', // Purple
+            backgroundColor: '#8B5CF6',
+            tension: 0.3,
+            borderWidth: 3
+          },
+          {
+            label: 'Factory Order',
+            data: factoryData,
+            borderColor: '#EF4444', // Red (most intense)
+            backgroundColor: '#EF4444',
+            tension: 0.3,
+            borderWidth: 5 // Thicker line to show the huge variation
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: {
+                size: 14,
+                family: "'Inter', sans-serif"
+              }
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            titleColor: '#1f2937',
+            bodyColor: '#4b5563',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Jumlah Pesanan (Unit)',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            grid: {
+              color: '#f3f4f6'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

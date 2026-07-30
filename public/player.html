@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player View - Blitz Beer Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans p-4 sm:p-8 flex items-center justify-center">
+
+  <div class="max-w-xl w-full">
+    
+    <!-- Header -->
+    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-500 text-center">
+      <h1 class="text-3xl font-black text-gray-800" id="roleDisplay">Loading Role...</h1>
+      <p class="text-gray-500 mt-2 font-medium">Room: <span id="roomDisplay" class="text-blue-600 font-bold tracking-widest">---</span></p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="bg-white rounded-b-2xl shadow p-6 sm:p-10 text-center min-h-[300px] flex flex-col justify-center">
+      
+      <!-- Waiting Screen -->
+      <div id="waitingScreen">
+        <div class="animate-pulse flex flex-col items-center">
+          <div class="rounded-full bg-blue-100 h-24 w-24 flex items-center justify-center mb-6">
+            <svg class="w-12 h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-700 mb-2" id="waitingTitle">Menunggu...</h2>
+          <p class="text-gray-500" id="waitingSubtitle">Game belum dimulai oleh Host.</p>
+        </div>
+      </div>
+
+      <!-- Action Screen -->
+      <div id="actionScreen" class="hidden">
+        
+        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8">
+          <p class="text-red-800 font-semibold mb-1 uppercase tracking-wider text-sm">Pesanan Masuk (Incoming Order)</p>
+          <div class="text-5xl font-black text-red-600 my-2" id="incomingAmount">0</div>
+          <p class="text-red-500 text-sm">Dari: <span id="incomingFrom" class="font-bold">Customer</span></p>
+        </div>
+
+        <div class="mb-4 text-left">
+          <label class="block text-gray-700 font-bold mb-2 text-lg">Pesanan Anda ke Rantai Berikutnya:</label>
+          <p class="text-sm text-gray-500 mb-4">Ingat: Jika Anda memesan terlalu banyak/sedikit, akan terjadi efek cambuk!</p>
+          <input type="number" id="orderInput" class="w-full border-2 border-gray-300 p-4 rounded-xl text-3xl font-bold text-center focus:outline-none focus:border-blue-500 shadow-inner" placeholder="0" min="0">
+        </div>
+
+        <button onclick="submitOrder()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-4 rounded-xl transition duration-200 text-xl shadow-lg mt-4 transform hover:scale-105">
+          KIRIM PESANAN
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    
+    // Parse URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomCode = urlParams.get('room');
+    const role = urlParams.get('role');
+    const playerName = urlParams.get('name') || role;
+
+    if (!roomCode || !role) {
+      alert('Invalid room or role. Redirecting to home.');
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('roleDisplay').innerText = role;
+    document.getElementById('roomDisplay').innerText = roomCode;
+
+    let myTurn = false;
+
+    // Join room
+    socket.emit('joinRoom', { roomCode, role, playerName });
+
+    socket.on('error', (msg) => {
+      alert(msg);
+      window.location.href = 'index.html';
+    });
+
+    socket.on('joined', (data) => {
+      console.log('Successfully joined as ' + data.role);
+    });
+
+    socket.on('gameStarted', ({ round }) => {
+      setWaiting('Game Dimulai!', 'Ronde ' + round + '. Menunggu giliran Anda...');
+    });
+
+    socket.on('newRound', ({ round }) => {
+      setWaiting('Ronde ' + round, 'Menunggu giliran Anda...');
+    });
+
+    socket.on('turnUpdate', ({ turn }) => {
+      if (turn === role) {
+        // Not handled here. Handled by incomingOrder to ensure we get the amount.
+        // Except if something goes wrong, but incomingOrder is sent right before turnUpdate.
+      } else if (turn === 'RoundComplete') {
+        setWaiting('Ronde Selesai', 'Menunggu Host melanjutkan ke ronde berikutnya...');
+      } else {
+        setWaiting('Giliran ' + turn, 'Pesanan sedang merambat...');
+      }
+    });
+
+    socket.on('incomingOrder', ({ amount, from }) => {
+      // It's my turn!
+      myTurn = true;
+      document.getElementById('waitingScreen').classList.add('hidden');
+      document.getElementById('actionScreen').classList.remove('hidden');
+      
+      document.getElementById('incomingAmount').innerText = amount;
+      document.getElementById('incomingFrom').innerText = from;
+      
+      // Focus input for speed
+      document.getElementById('orderInput').value = '';
+      setTimeout(() => document.getElementById('orderInput').focus(), 100);
+    });
+
+    function setWaiting(title, subtitle) {
+      myTurn = false;
+      document.getElementById('actionScreen').classList.add('hidden');
+      document.getElementById('waitingScreen').classList.remove('hidden');
+      document.getElementById('waitingTitle').innerText = title;
+      document.getElementById('waitingSubtitle').innerText = subtitle;
+    }
+
+    function submitOrder() {
+      if (!myTurn) return;
+      const val = document.getElementById('orderInput').value;
+      if (val === '') {
+        alert('Masukkan jumlah pesanan!');
+        return;
+      }
+      
+      socket.emit('submitOrder', { roomCode, orderAmount: val });
+      setWaiting('Pesanan Terkirim!', 'Menunggu pemain lain...');
+    }
+
+    socket.on('gameFinished', ({ history }) => {
+      sessionStorage.setItem('gameHistory', JSON.stringify(history));
+      window.location.href = 'result.html';
+    });
+  </script>
+</body>
+</html>

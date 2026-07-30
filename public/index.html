@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blitz Beer Game</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center h-screen font-sans">
+
+  <div class="bg-white p-10 rounded-2xl shadow-xl max-w-md w-full text-center">
+    <h1 class="text-3xl font-bold text-blue-600 mb-2">Blitz Beer Game</h1>
+    <p class="text-gray-500 mb-8">Simulasi Rantai Pasok Kilat (8 Menit)</p>
+
+    <!-- Create Room Section -->
+    <div class="mb-8 border-b pb-8">
+      <h2 class="text-lg font-semibold mb-4 text-gray-700">Untuk Asisten Lab</h2>
+      <button onclick="window.location.href='host.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+        Create New Room
+      </button>
+    </div>
+
+    <!-- Join Room Section -->
+    <div>
+      <h2 class="text-lg font-semibold mb-4 text-gray-700">Untuk Mahasiswa</h2>
+      <input type="text" id="roomCode" placeholder="Masukkan Room Code" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-4 focus:outline-none focus:border-blue-500 text-center uppercase font-bold text-lg">
+      <select id="role" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-4 focus:outline-none focus:border-blue-500">
+        <option value="" disabled selected>Pilih Peran Anda</option>
+        <option value="Retailer">Retailer (Pengecer)</option>
+        <option value="Wholesaler">Wholesaler (Grosir)</option>
+        <option value="Distributor">Distributor</option>
+        <option value="Factory">Factory (Pabrik)</option>
+      </select>
+      <input type="text" id="playerName" placeholder="Nama Anda (Opsional)" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-6 focus:outline-none focus:border-blue-500 text-center">
+      
+      <button onclick="joinRoom()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+        Join Game
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function joinRoom() {
+      const roomCode = document.getElementById('roomCode').value.trim().toUpperCase();
+      const role = document.getElementById('role').value;
+      const playerName = document.getElementById('playerName').value.trim();
+
+      if (!roomCode || !role) {
+        alert('Mohon masukkan Room Code dan pilih Peran!');
+        return;
+      }
+
+      // Redirect with query params
+      window.location.href = `player.html?room=${roomCode}&role=${role}&name=${encodeURIComponent(playerName)}`;
+    }
+  </script>
+</body>
+</html>
