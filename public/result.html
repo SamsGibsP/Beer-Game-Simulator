@@ -186,7 +186,15 @@
     // Chart.js Setup
     const chartOpts = {
       responsive: true,
-      plugins: { legend: { position: 'top' } },
+      plugins: { 
+        legend: { 
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            boxWidth: 10
+          }
+        } 
+      },
       interaction: { mode: 'index', intersect: false }
     };
 

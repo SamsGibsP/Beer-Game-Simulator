@@ -66,14 +66,14 @@
     <!-- Header -->
     <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-600">
         <!-- Header Info -->
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4 gap-4 text-center sm:text-left">
           <div>
-            <h2 class="text-3xl font-black text-gray-800">Minggu Ke-<span id="roundDisplay">1</span> / <span id="maxRoundsDisplay">25</span></h2>
-            <p class="text-gray-500 font-semibold" id="roomDisplay">----</p>
+            <h2 class="text-2xl sm:text-3xl font-black text-gray-800">Minggu Ke-<span id="roundDisplay">1</span> / <span id="maxRoundsDisplay">[Jumlah Babak]</span></h2>
+            <p class="text-gray-500 font-bold mt-1 text-xs sm:text-sm tracking-widest uppercase">Kode Ruang: <span id="roomDisplay" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-1">----</span></p>
           </div>
-          <div class="text-right">
-            <p class="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Peran Anda</p>
-            <div class="text-2xl font-black text-blue-600 bg-blue-100 py-1 px-4 rounded-xl" id="roleDisplay">--</div>
+          <div class="sm:text-right">
+            <p class="text-xs sm:text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Peran Anda</p>
+            <div class="text-xl sm:text-2xl font-black text-blue-600 bg-blue-100 py-1 px-4 rounded-xl inline-block" id="roleDisplay">--</div>
           </div>
         </div>
     </div>
@@ -144,9 +144,9 @@
         <div class="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-sm">
           <label class="block text-gray-800 font-bold mb-2 text-xl text-center">Pesanan Baru (Order Placed):</label>
           <p class="text-sm text-gray-500 mb-6 text-center">Masukkan jumlah pesanan/produksi untuk minggu ini.</p>
-          <div class="flex items-center justify-center gap-4">
-            <input type="number" id="orderInput" class="w-1/2 border-2 border-blue-300 p-4 rounded-xl text-4xl font-black text-center focus:outline-none focus:border-blue-600 bg-blue-50" placeholder="0" min="0">
-            <button onclick="submitOrder()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-4 rounded-xl transition duration-200 text-xl shadow-lg transform hover:scale-105">
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <input type="number" id="orderInput" class="w-full sm:w-1/2 border-2 border-blue-300 p-3 sm:p-4 rounded-xl text-3xl sm:text-4xl font-black text-center focus:outline-none focus:border-blue-600 bg-blue-50" placeholder="0" min="0">
+            <button onclick="submitOrder()" class="w-full sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-black py-3 sm:py-4 px-4 rounded-xl transition duration-200 text-lg sm:text-xl shadow-lg transform hover:scale-105">
               KIRIM
             </button>
           </div>
