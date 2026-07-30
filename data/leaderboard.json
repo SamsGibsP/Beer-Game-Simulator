@@ -1,5 +1,11 @@
 [
   {
+    "roomName": "TEST_2",
+    "cost": 73000,
+    "serviceLevel": 100,
+    "date": "2026-07-30T06:54:56.618Z"
+  },
+  {
     "roomName": "TEST",
     "cost": 78500,
     "serviceLevel": 75,

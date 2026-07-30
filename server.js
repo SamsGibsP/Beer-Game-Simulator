@@ -114,6 +114,7 @@ io.on('connection', (socket) => {
 
   // PLAYER / PROJECTOR: Join Room
   socket.on('joinRoom', ({ roomCode, role, playerName }) => {
+    if (!roomCode) return socket.emit('error', 'Room code is required.');
     roomCode = roomCode.toUpperCase();
     const room = rooms[roomCode];
 
