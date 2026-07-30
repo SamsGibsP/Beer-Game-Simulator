@@ -19,6 +19,19 @@ function generateRoomCode() {
   return Math.random().toString(36).substring(2, 6).toUpperCase();
 }
 
+function getInitialRoleState() {
+  return {
+    inventory: 12,
+    backlog: 0,
+    pipeline1: 4,
+    pipeline2: 4,
+    incomingOrder: 4,
+    orderPlaced: null,
+    cost: 0,
+    shipped: 0, // temporary storage for recording
+  };
+}
+
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
@@ -27,19 +40,19 @@ io.on('connection', (socket) => {
     const roomCode = generateRoomCode();
     rooms[roomCode] = {
       hostId: socket.id,
-      players: {
-        Retailer: null,
-        Wholesaler: null,
-        Distributor: null,
-        Factory: null
-      },
+      players: { Retailer: null, Wholesaler: null, Distributor: null, Factory: null },
       playerNames: {},
       round: 0,
-      maxRounds: 4,
+      maxRounds: 25,
       gameState: 'waiting', // waiting, in_progress, finished
-      currentTurn: 'Customer', // Customer -> Retailer -> Wholesaler -> Distributor -> Factory -> RoundComplete
-      history: [] 
-      // history[round-1] = { Customer: X, Retailer: X, Wholesaler: X, Distributor: X, Factory: X }
+      history: [], 
+      state: {
+        Customer: { orderPlaced: null },
+        Retailer: getInitialRoleState(),
+        Wholesaler: getInitialRoleState(),
+        Distributor: getInitialRoleState(),
+        Factory: getInitialRoleState()
+      }
     };
     socket.join(roomCode);
     socket.emit('roomCreated', roomCode);
@@ -50,29 +63,16 @@ io.on('connection', (socket) => {
     roomCode = roomCode.toUpperCase();
     const room = rooms[roomCode];
 
-    if (!room) {
-      return socket.emit('error', 'Room not found.');
-    }
-
-    if (room.gameState !== 'waiting') {
-      return socket.emit('error', 'Game has already started.');
-    }
-
-    if (!ROLES.includes(role)) {
-      return socket.emit('error', 'Invalid role.');
-    }
-
-    if (room.players[role] !== null) {
-      return socket.emit('error', `Role ${role} is already taken.`);
-    }
+    if (!room) return socket.emit('error', 'Room not found.');
+    if (room.gameState !== 'waiting') return socket.emit('error', 'Game has already started.');
+    if (!ROLES.includes(role)) return socket.emit('error', 'Invalid role.');
+    if (room.players[role] !== null) return socket.emit('error', `Role ${role} is already taken.`);
 
     room.players[role] = socket.id;
     room.playerNames[role] = playerName || role;
     socket.join(roomCode);
 
     socket.emit('joined', { role, roomCode });
-    
-    // Notify host that someone joined
     io.to(room.hostId).emit('playerJoined', { role, playerName: room.playerNames[role] });
   });
 
@@ -80,85 +80,118 @@ io.on('connection', (socket) => {
   socket.on('startGame', (roomCode) => {
     const room = rooms[roomCode];
     if (room && room.hostId === socket.id) {
-      // Ensure all roles are filled (Optional, but good for real game. We can force it or just warn)
-      const missingRoles = ROLES.filter(r => room.players[r] === null);
-      if (missingRoles.length > 0) {
-        return socket.emit('error', `Missing players for: ${missingRoles.join(', ')}`);
-      }
-
       room.gameState = 'in_progress';
       room.round = 1;
-      room.currentTurn = 'Customer';
-      room.history.push({});
-      io.to(roomCode).emit('gameStarted', { round: room.round });
-      io.to(roomCode).emit('turnUpdate', { turn: 'Customer', message: 'Menunggu Host memasukkan Customer Demand' });
+      // Record initial state as week 0 history
+      room.history.push(JSON.parse(JSON.stringify(room.state)));
+      
+      io.to(roomCode).emit('gameStarted', { round: room.round, state: room.state });
     }
   });
 
   // HOST / PLAYER: Submit Order
-  socket.on('submitOrder', ({ roomCode, orderAmount }) => {
+  socket.on('submitOrder', ({ roomCode, role, orderAmount }) => {
     const room = rooms[roomCode];
     if (!room || room.gameState !== 'in_progress') return;
 
     orderAmount = parseInt(orderAmount);
-    if (isNaN(orderAmount)) return;
+    if (isNaN(orderAmount) || orderAmount < 0) return;
 
-    const roundIndex = room.round - 1;
-    const currentHist = room.history[roundIndex];
+    // Verify sender
+    if (role === 'Customer' && socket.id !== room.hostId) return;
+    if (role !== 'Customer' && socket.id !== room.players[role]) return;
 
-    const roleOrder = ['Customer', 'Retailer', 'Wholesaler', 'Distributor', 'Factory'];
-    const currentRoleIndex = roleOrder.indexOf(room.currentTurn);
+    room.state[role].orderPlaced = orderAmount;
     
-    // Verify who is sending
-    if (room.currentTurn === 'Customer' && socket.id !== room.hostId) return;
-    if (room.currentTurn !== 'Customer' && socket.id !== room.players[room.currentTurn]) return;
-
-    // Save order
-    currentHist[room.currentTurn] = orderAmount;
-
-    // Advance turn
-    const nextRoleIndex = currentRoleIndex + 1;
+    // Notify host about submission status
+    io.to(room.hostId).emit('playerSubmitted', { role });
     
-    if (nextRoleIndex < roleOrder.length) {
-      const nextRole = roleOrder[nextRoleIndex];
-      room.currentTurn = nextRole;
-      
-      // Emit to everyone for status update
-      io.to(roomCode).emit('turnUpdate', { turn: nextRole });
+    // Check if everyone has submitted
+    const allSubmitted = 
+      room.state.Customer.orderPlaced !== null &&
+      room.state.Retailer.orderPlaced !== null &&
+      room.state.Wholesaler.orderPlaced !== null &&
+      room.state.Distributor.orderPlaced !== null &&
+      room.state.Factory.orderPlaced !== null;
 
-      // Emit specifically to the next role so they see the incoming order
-      const nextSocketId = nextRole === 'Customer' ? room.hostId : room.players[nextRole];
-      if (nextSocketId) {
-        io.to(nextSocketId).emit('incomingOrder', { amount: orderAmount, from: roleOrder[currentRoleIndex] });
-      }
-    } else {
-      // Round Complete
-      room.currentTurn = 'RoundComplete';
-      io.to(roomCode).emit('turnUpdate', { turn: 'RoundComplete' });
-      io.to(room.hostId).emit('roundComplete', { round: room.round, data: currentHist });
+    if (allSubmitted) {
+      processRound(roomCode);
     }
   });
 
-  // HOST: Next Round
-  socket.on('nextRound', (roomCode) => {
+  function processRound(roomCode) {
     const room = rooms[roomCode];
-    if (room && room.hostId === socket.id && room.currentTurn === 'RoundComplete') {
-      if (room.round >= room.maxRounds) {
-        // End Game
-        room.gameState = 'finished';
-        io.to(roomCode).emit('gameFinished', { history: room.history });
-      } else {
-        // Start next round
-        room.round++;
-        room.currentTurn = 'Customer';
-        room.history.push({});
-        io.to(roomCode).emit('newRound', { round: room.round });
-        io.to(roomCode).emit('turnUpdate', { turn: 'Customer' });
-      }
-    }
-  });
+    const s = room.state;
 
-  // Disconnect logic
+    // We store the current orderPlaced to pass to next week's incoming
+    const orders = {
+      Customer: s.Customer.orderPlaced,
+      Retailer: s.Retailer.orderPlaced,
+      Wholesaler: s.Wholesaler.orderPlaced,
+      Distributor: s.Distributor.orderPlaced,
+      Factory: s.Factory.orderPlaced
+    };
+
+    const roles = ['Retailer', 'Wholesaler', 'Distributor', 'Factory'];
+    let shippedTemp = {};
+
+    // Step 1 & 2: Slide and Fill
+    for (const role of roles) {
+      const state = s[role];
+      // Step 1: Slide
+      state.inventory += state.pipeline2;
+      state.pipeline2 = state.pipeline1;
+      state.pipeline1 = 0; // Will be filled in Step 3
+
+      // Step 2: Fill
+      const toShip = state.incomingOrder + state.backlog;
+      const shipped = Math.min(state.inventory, toShip);
+      state.inventory -= shipped;
+      state.backlog = toShip - shipped;
+      shippedTemp[role] = shipped;
+      state.shipped = shipped;
+    }
+
+    // Step 3: Place Orders (Route information and physical shipments)
+    // Info delay: orders placed this week become incomingOrder next week
+    s.Retailer.incomingOrder = orders.Customer;
+    s.Wholesaler.incomingOrder = orders.Retailer;
+    s.Distributor.incomingOrder = orders.Wholesaler;
+    s.Factory.incomingOrder = orders.Distributor;
+
+    // Physical shipping delay: shipped this week goes to pipeline1 next week
+    // Retailer's shipment goes to Customer (leaves system)
+    s.Retailer.pipeline1 = shippedTemp.Wholesaler;
+    s.Wholesaler.pipeline1 = shippedTemp.Distributor;
+    s.Distributor.pipeline1 = shippedTemp.Factory;
+    s.Factory.pipeline1 = orders.Factory; // Factory produces for itself
+
+    // Step 4: Record IRS (Costs)
+    for (const role of roles) {
+      const state = s[role];
+      state.cost = (state.inventory * 500) + (state.backlog * 1000);
+    }
+
+    // Save history
+    room.history.push(JSON.parse(JSON.stringify(s)));
+
+    // Check game end
+    if (room.round >= room.maxRounds) {
+      room.gameState = 'finished';
+      io.to(roomCode).emit('gameFinished', { history: room.history });
+    } else {
+      // Reset orderPlaced for next round
+      s.Customer.orderPlaced = null;
+      s.Retailer.orderPlaced = null;
+      s.Wholesaler.orderPlaced = null;
+      s.Distributor.orderPlaced = null;
+      s.Factory.orderPlaced = null;
+
+      room.round++;
+      io.to(roomCode).emit('newRound', { round: room.round, state: s });
+    }
+  }
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
