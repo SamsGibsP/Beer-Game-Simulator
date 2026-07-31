@@ -11,63 +11,93 @@
 
   <div class="max-w-4xl mx-auto">
     <!-- Header -->
-    <div class="bg-white rounded-2xl shadow p-6 mb-6 flex justify-between items-center">
+    <div class="bg-white rounded-2xl shadow p-6 mb-6 flex justify-between items-center border-t-4 border-blue-600 relative">
       <div>
-        <h1 class="text-2xl font-bold text-blue-600">Host Dashboard (Customer)</h1>
-        <p class="text-gray-500">Kendalikan permainan dan tetapkan *demand*</p>
+        <h1 class="text-2xl font-bold text-blue-600">Host Dashboard</h1>
+        <p class="text-gray-500" id="modeSubtitle">Kendalikan permainan dan tetapkan demand</p>
       </div>
       <div class="text-right">
         <p class="text-sm text-gray-500 mb-1">Room Code:</p>
         <div id="roomCodeDisplay" class="text-4xl font-black text-gray-800 tracking-widest bg-gray-100 py-2 px-4 rounded-xl">----</div>
+      </div>
+
+      <div id="timerContainer" class="hidden absolute -top-4 right-4 bg-red-100 text-red-700 font-bold px-4 py-2 rounded-xl border-2 border-red-300 shadow-md">
+        <span id="timerDisplay" class="text-2xl">40</span>s
       </div>
     </div>
 
     <!-- Players Status -->
     <div class="bg-white rounded-2xl shadow p-6 mb-6" id="waitingRoom">
       <h2 class="text-xl font-bold text-gray-700 mb-4">Pemain Terhubung</h2>
-      <div class="grid grid-cols-4 gap-4 mb-6">
-        <div id="status-Retailer" class="bg-red-50 border-2 border-red-200 text-red-600 font-semibold p-4 rounded-xl text-center">Retailer<br><span class="text-xs text-red-400 font-normal">Waiting...</span></div>
-        <div id="status-Wholesaler" class="bg-red-50 border-2 border-red-200 text-red-600 font-semibold p-4 rounded-xl text-center">Wholesaler<br><span class="text-xs text-red-400 font-normal">Waiting...</span></div>
-        <div id="status-Distributor" class="bg-red-50 border-2 border-red-200 text-red-600 font-semibold p-4 rounded-xl text-center">Distributor<br><span class="text-xs text-red-400 font-normal">Waiting...</span></div>
-        <div id="status-Factory" class="bg-red-50 border-2 border-red-200 text-red-600 font-semibold p-4 rounded-xl text-center">Factory<br><span class="text-xs text-red-400 font-normal">Waiting...</span></div>
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6" id="playersGrid">
+        <!-- Will be populated by JS -->
       </div>
       <button id="startBtn" onclick="startGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition duration-200 text-lg shadow-lg">
         Start Game (Ronde 1)
       </button>
     </div>
 
-    <!-- Game Control Panel (Hidden initially) -->
+    <!-- Game Control Panel -->
     <div id="gamePanel" class="bg-white rounded-2xl shadow p-6 hidden">
       <div class="flex justify-between items-center mb-6 border-b pb-4">
-        <h2 class="text-2xl font-bold text-gray-800" id="roundDisplay">Ronde 1 / 4</h2>
+        <h2 class="text-2xl font-bold text-gray-800" id="roundDisplay">Ronde 1</h2>
         <div class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold" id="turnIndicator">
           Turn: Customer
         </div>
       </div>
 
-      <!-- Customer Demand Input -->
-      <div id="demandSection" class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-center mb-6">
+      <!-- Linear Demand Input -->
+      <div id="demandSectionLinear" class="hidden bg-blue-50 border-2 border-blue-200 rounded-xl p-6 text-center mb-6">
         <h3 class="text-xl font-bold text-blue-800 mb-2">Giliran Anda: Tetapkan Demand</h3>
-        <p class="text-blue-600 mb-4 text-sm">Rekomendasi:<br>Ronde 1: 4 unit | Ronde 2: 8 unit | Ronde 3: 4 unit | Ronde 4: 4 unit</p>
+        <p class="text-blue-600 mb-4 text-sm">Rekomendasi: R1: 4 | R2: 8 | R3: 4 | R4: 4</p>
         <div class="flex justify-center items-center gap-4">
-          <input type="number" id="demandInput" class="border-2 border-blue-300 p-3 rounded-xl w-32 text-center text-2xl font-bold focus:outline-none focus:border-blue-600" value="4">
-          <button onclick="submitDemand()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 text-lg">
+          <input type="number" id="demandInputLinear" class="border-2 border-blue-300 p-3 rounded-xl w-32 text-center text-2xl font-bold focus:outline-none focus:border-blue-600" value="4">
+          <button onclick="submitDemandLinear()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 text-lg">
             Kirim ke Retailer
           </button>
         </div>
+      </div>
+
+      <!-- Network Demand Input -->
+      <div id="demandSectionNetwork" class="hidden bg-indigo-50 border-2 border-indigo-200 rounded-xl p-6 text-center mb-6">
+        <h3 class="text-xl font-bold text-indigo-800 mb-2">Tetapkan Demand Pelanggan (Simultan)</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div>
+            <label class="block text-indigo-700 font-bold mb-2 text-sm">Customer 1 (ke R1)</label>
+            <input type="number" id="demandInputC1" class="border-2 border-indigo-300 p-3 rounded-xl w-full text-center text-2xl font-bold focus:outline-none focus:border-indigo-600" value="4">
+          </div>
+          <div>
+            <label class="block text-indigo-700 font-bold mb-2 text-sm">Customer 2 (ke R2)</label>
+            <input type="number" id="demandInputC2" class="border-2 border-indigo-300 p-3 rounded-xl w-full text-center text-2xl font-bold focus:outline-none focus:border-indigo-600" value="4">
+          </div>
+          <div>
+            <label class="block text-indigo-700 font-bold mb-2 text-sm">Customer 3 (ke R3)</label>
+            <input type="number" id="demandInputC3" class="border-2 border-indigo-300 p-3 rounded-xl w-full text-center text-2xl font-bold focus:outline-none focus:border-indigo-600" value="4">
+          </div>
+          <div>
+            <label class="block text-indigo-700 font-bold mb-2 text-sm">Customer 4 (ke R4)</label>
+            <input type="number" id="demandInputC4" class="border-2 border-indigo-300 p-3 rounded-xl w-full text-center text-2xl font-bold focus:outline-none focus:border-indigo-600" value="4">
+          </div>
+        </div>
+        <button onclick="submitDemandNetwork()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 text-lg">
+          Kirim Demand
+        </button>
       </div>
 
       <!-- Waiting Others -->
       <div id="waitingSection" class="text-center py-10 hidden">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
         <h3 class="text-xl font-bold text-gray-700">Menunggu Pemain Lain...</h3>
-        <p class="text-gray-500" id="waitingText">Pesanan sedang merambat di rantai pasok.</p>
+        <p class="text-gray-500" id="waitingText">Pesanan sedang diproses.</p>
+        <div id="networkStatus" class="mt-4 hidden text-sm font-semibold text-indigo-600">
+          <span id="submittedCount">0</span>/10 Pemain telah submit.
+        </div>
       </div>
 
       <!-- Round Complete -->
       <div id="roundCompleteSection" class="text-center py-8 hidden bg-green-50 rounded-xl border-2 border-green-200">
         <h3 class="text-2xl font-bold text-green-700 mb-2">Ronde Selesai!</h3>
-        <p class="text-green-600 mb-6">Semua pemain telah memasukkan pesanan mereka.</p>
+        <p class="text-green-600 mb-6">Semua aktivitas rantai pasok ronde ini telah dieksekusi.</p>
         <button onclick="nextRound()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-xl transition duration-200 text-lg shadow-lg">
           Lanjut Ronde Berikutnya
         </button>
@@ -79,17 +109,50 @@
   <script>
     const socket = io();
     let currentRoomCode = '';
+    let gameMode = 'linear';
+    let submittedPlayers = new Set();
+    const maxRoundsLinear = 4;
+    const maxRoundsNetwork = 10;
+    let maxRounds = maxRoundsLinear;
+    let countdownInterval = null;
 
-    // Initialize
-    socket.emit('createRoom');
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.get('mode') === 'network') {
+      gameMode = 'network';
+      maxRounds = maxRoundsNetwork;
+    }
 
-    socket.on('roomCreated', (roomCode) => {
-      currentRoomCode = roomCode;
-      document.getElementById('roomCodeDisplay').innerText = roomCode;
+    document.getElementById('modeSubtitle').innerText = gameMode === 'network' ? 'Mode Network (Multi-Eselon & Multi-Moda)' : 'Mode Linear (Regular)';
+
+    const rolesLinear = ['Retailer', 'Wholesaler', 'Distributor', 'Factory'];
+    const rolesNetwork = [
+      'Retailer 1', 'Retailer 2', 'Retailer 3', 'Retailer 4',
+      'Warehouse 1', 'Warehouse 2', 'Warehouse 3',
+      'Wholesale 1', 'Wholesale 2',
+      'Factory'
+    ];
+    const activeRoles = gameMode === 'network' ? rolesNetwork : rolesLinear;
+
+    const playersGrid = document.getElementById('playersGrid');
+    activeRoles.forEach(role => {
+      const idStr = role.replace(/ /g, '');
+      playersGrid.innerHTML += `
+        <div id="status-${idStr}" class="bg-red-50 border-2 border-red-200 text-red-600 font-semibold p-4 rounded-xl text-center">
+          ${role}<br><span class="text-xs text-red-400 font-normal">Waiting...</span>
+        </div>
+      `;
+    });
+
+    socket.emit('createRoom', { mode: gameMode });
+
+    socket.on('roomCreated', (data) => {
+      currentRoomCode = data.roomCode;
+      document.getElementById('roomCodeDisplay').innerText = data.roomCode;
     });
 
     socket.on('playerJoined', ({ role, playerName }) => {
-      const el = document.getElementById(`status-${role}`);
+      const idStr = role.replace(/ /g, '');
+      const el = document.getElementById(`status-${idStr}`);
       if (el) {
         el.className = 'bg-green-50 border-2 border-green-200 text-green-700 font-bold p-4 rounded-xl text-center';
         el.innerHTML = `${role}<br><span class="text-sm text-green-600 font-normal">${playerName} Connected</span>`;
@@ -100,55 +163,118 @@
       alert('Error: ' + msg);
     });
 
+    // --- TIMER LOGIC ---
+    socket.on('timerStart', ({ duration }) => {
+      let timeLeft = duration;
+      const tc = document.getElementById('timerContainer');
+      const td = document.getElementById('timerDisplay');
+      tc.classList.remove('hidden');
+      td.innerText = timeLeft;
+      
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        timeLeft--;
+        td.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+    });
+
+    function stopTimer() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('timerContainer').classList.add('hidden');
+    }
+
     function startGame() {
       socket.emit('startGame', currentRoomCode);
     }
 
-    socket.on('gameStarted', ({ round }) => {
+    socket.on('gameStarted', ({ round, mode }) => {
       document.getElementById('waitingRoom').classList.add('hidden');
       document.getElementById('gamePanel').classList.remove('hidden');
       updateRound(round);
     });
 
-    socket.on('newRound', ({ round }) => {
+    socket.on('newRound', ({ round, mode }) => {
       updateRound(round);
       document.getElementById('roundCompleteSection').classList.add('hidden');
+      submittedPlayers.clear();
+      updateSubmittedCount();
     });
 
     function updateRound(round) {
-      document.getElementById('roundDisplay').innerText = `Ronde ${round} / 4`;
+      document.getElementById('roundDisplay').innerText = `Ronde ${round} / ${maxRounds}`;
     }
 
-    socket.on('turnUpdate', ({ turn, message }) => {
+    // LINEAR MODE LOGIC
+    socket.on('turnUpdate', ({ turn }) => {
       document.getElementById('turnIndicator').innerText = `Turn: ${turn}`;
-      
       if (turn === 'Customer') {
-        document.getElementById('demandSection').classList.remove('hidden');
+        document.getElementById('demandSectionLinear').classList.remove('hidden');
         document.getElementById('waitingSection').classList.add('hidden');
         document.getElementById('roundCompleteSection').classList.add('hidden');
-        
-        // Setup suggested demand
-        const currentRound = parseInt(document.getElementById('roundDisplay').innerText.replace(/\D/g,'')[0]);
-        let suggested = 4;
-        if (currentRound === 2) suggested = 8;
-        document.getElementById('demandInput').value = suggested;
-
-      } else if (turn === 'RoundComplete') {
-        // Handled by roundComplete event below
-      } else {
-        document.getElementById('demandSection').classList.add('hidden');
+      } else if (turn !== 'RoundComplete') {
+        document.getElementById('demandSectionLinear').classList.add('hidden');
         document.getElementById('waitingSection').classList.remove('hidden');
         document.getElementById('waitingText').innerText = `Menunggu pesanan dari ${turn}...`;
       }
     });
 
-    function submitDemand() {
-      const amount = document.getElementById('demandInput').value;
+    socket.on('roundComplete', ({ round, data }) => {
+      document.getElementById('waitingSection').classList.add('hidden');
+      document.getElementById('roundCompleteSection').classList.remove('hidden');
+    });
+
+    function submitDemandLinear() {
+      const amount = document.getElementById('demandInputLinear').value;
       if (!amount) return;
       socket.emit('submitOrder', { roomCode: currentRoomCode, orderAmount: amount });
     }
 
-    socket.on('roundComplete', ({ round, data }) => {
+    // NETWORK MODE LOGIC
+    socket.on('turnUpdateNetwork', ({ round }) => {
+      document.getElementById('turnIndicator').innerText = `Turn: Simultan`;
+      document.getElementById('demandSectionNetwork').classList.remove('hidden');
+      document.getElementById('waitingSection').classList.add('hidden');
+      document.getElementById('roundCompleteSection').classList.add('hidden');
+      document.getElementById('networkStatus').classList.remove('hidden');
+    });
+
+    function submitDemandNetwork() {
+      const c1 = document.getElementById('demandInputC1').value;
+      const c2 = document.getElementById('demandInputC2').value;
+      const c3 = document.getElementById('demandInputC3').value;
+      const c4 = document.getElementById('demandInputC4').value;
+      
+      socket.emit('submitOrderNetwork', { 
+        roomCode: currentRoomCode, 
+        role: 'Host',
+        orderAmount: { c1, c2, c3, c4 }
+      });
+
+      document.getElementById('demandSectionNetwork').classList.add('hidden');
+      document.getElementById('waitingSection').classList.remove('hidden');
+      document.getElementById('waitingText').innerText = `Menunggu pemain lain submit pesanan & transportasi...`;
+    }
+
+    socket.on('playerSubmitted', ({ role, auto }) => {
+      if (role !== 'Host') {
+        submittedPlayers.add(role);
+        updateSubmittedCount();
+      } else if (auto) {
+        // Host was auto-submitted
+        document.getElementById('demandSectionNetwork').classList.add('hidden');
+        document.getElementById('waitingSection').classList.remove('hidden');
+      }
+    });
+
+    function updateSubmittedCount() {
+      document.getElementById('submittedCount').innerText = submittedPlayers.size;
+    }
+
+    socket.on('networkRoundComplete', ({ round, nodes }) => {
+      stopTimer();
       document.getElementById('waitingSection').classList.add('hidden');
       document.getElementById('roundCompleteSection').classList.remove('hidden');
     });
@@ -157,9 +283,13 @@
       socket.emit('nextRound', currentRoomCode);
     }
 
-    socket.on('gameFinished', ({ history }) => {
-      // Go to results page, pass history via sessionStorage or query params
-      sessionStorage.setItem('gameHistory', JSON.stringify(history));
+    socket.on('gameFinished', ({ history, nodes, mode }) => {
+      if (mode === 'linear') {
+        sessionStorage.setItem('gameHistory', JSON.stringify(history));
+      } else {
+        sessionStorage.setItem('networkHistory', JSON.stringify(nodes));
+      }
+      sessionStorage.setItem('gameMode', mode);
       window.location.href = 'result.html';
     });
   </script>

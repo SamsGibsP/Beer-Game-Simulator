@@ -15,9 +15,14 @@
     <!-- Create Room Section -->
     <div class="mb-8 border-b pb-8">
       <h2 class="text-lg font-semibold mb-4 text-gray-700">Untuk Asisten Lab</h2>
-      <button onclick="window.location.href='host.html'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
-        Create New Room
-      </button>
+      <div class="flex flex-col gap-3">
+        <button onclick="window.location.href='host.html?mode=linear'" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+          Create Room (Linear)
+        </button>
+        <button onclick="window.location.href='host.html?mode=network'" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200">
+          Create Room (Network)
+        </button>
+      </div>
     </div>
 
     <!-- Join Room Section -->
@@ -26,10 +31,24 @@
       <input type="text" id="roomCode" placeholder="Masukkan Room Code" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-4 focus:outline-none focus:border-blue-500 text-center uppercase font-bold text-lg">
       <select id="role" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-4 focus:outline-none focus:border-blue-500">
         <option value="" disabled selected>Pilih Peran Anda</option>
-        <option value="Retailer">Retailer (Pengecer)</option>
-        <option value="Wholesaler">Wholesaler (Grosir)</option>
-        <option value="Distributor">Distributor</option>
-        <option value="Factory">Factory (Pabrik)</option>
+        <optgroup label="Mode Linear (Regular)">
+          <option value="Retailer">Retailer (Pengecer)</option>
+          <option value="Wholesaler">Wholesaler (Grosir)</option>
+          <option value="Distributor">Distributor</option>
+          <option value="Factory">Factory (Pabrik)</option>
+        </optgroup>
+        <optgroup label="Mode Network (Fully Meshed)">
+          <option value="Retailer 1">Retailer 1</option>
+          <option value="Retailer 2">Retailer 2</option>
+          <option value="Retailer 3">Retailer 3</option>
+          <option value="Retailer 4">Retailer 4</option>
+          <option value="Warehouse 1">Warehouse 1</option>
+          <option value="Warehouse 2">Warehouse 2</option>
+          <option value="Warehouse 3">Warehouse 3</option>
+          <option value="Wholesale 1">Wholesale 1</option>
+          <option value="Wholesale 2">Wholesale 2</option>
+          <option value="Factory">Factory (Pabrik)</option>
+        </optgroup>
       </select>
       <input type="text" id="playerName" placeholder="Nama Anda (Opsional)" class="w-full border-2 border-gray-200 p-3 rounded-xl mb-6 focus:outline-none focus:border-blue-500 text-center">
       

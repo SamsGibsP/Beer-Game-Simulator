@@ -9,20 +9,38 @@
 </head>
 <body class="bg-gray-50 min-h-screen font-sans p-8">
 
-  <div class="max-w-5xl mx-auto">
+  <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="bg-white rounded-2xl shadow p-8 mb-6 text-center border-b-4 border-blue-600">
-      <h1 class="text-4xl font-black text-gray-800 mb-2">Aha! Moment: Bullwhip Effect</h1>
-      <p class="text-gray-500 text-lg">Lihat bagaimana fluktuasi kecil di tingkat Customer menyebabkan distorsi pesanan ekstrem di tingkat Factory.</p>
+      <h1 class="text-4xl font-black text-gray-800 mb-2" id="pageTitle">Aha! Moment: Bullwhip Effect</h1>
+      <p class="text-gray-500 text-lg" id="pageSubtitle">Lihat bagaimana fluktuasi kecil menyebabkan distorsi pesanan ekstrem di hulu.</p>
     </div>
 
-    <!-- Chart Container -->
-    <div class="bg-white rounded-2xl shadow p-8 mb-6">
+    <!-- Chart Containers -->
+    <div class="bg-white rounded-2xl shadow p-8 mb-6" id="linearChartContainer">
+      <h2 class="text-xl font-bold mb-4 text-center">Volume Pesanan (Linear Mode)</h2>
       <canvas id="bullwhipChart" width="400" height="200"></canvas>
     </div>
 
+    <div class="bg-white rounded-2xl shadow p-8 mb-6 hidden" id="networkChartContainer">
+      <h2 class="text-xl font-bold mb-4 text-center">Volume Pesanan (Network Mode - Fully Meshed)</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-lg font-semibold text-center mb-2 text-gray-600">Level Retailer & Warehouse</h3>
+          <canvas id="networkOrderChart1" width="400" height="250"></canvas>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-center mb-2 text-gray-600">Level Wholesale & Factory</h3>
+          <canvas id="networkOrderChart2" width="400" height="250"></canvas>
+        </div>
+      </div>
+      
+      <h2 class="text-xl font-bold mt-12 mb-4 text-center">Akumulasi Biaya Total (Cost) per Eselon</h2>
+      <canvas id="networkCostChart" width="400" height="150"></canvas>
+    </div>
+
     <!-- Explanation -->
-    <div class="bg-blue-50 rounded-2xl border-2 border-blue-200 p-8 text-blue-900">
+    <div class="bg-blue-50 rounded-2xl border-2 border-blue-200 p-8 text-blue-900" id="explanationText">
       <h3 class="font-bold text-xl mb-3 flex items-center">
         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         Apa yang terjadi?
@@ -31,7 +49,7 @@
         Grafik di atas menunjukkan volume pesanan di tiap tahap rantai pasok. Biasanya, pesanan dari <strong>Customer</strong> relatif stabil atau hanya sedikit berfluktuasi. Namun, setiap pemain di rantai pasok bereaksi berlebihan terhadap perubahan tersebut karena kepanikan dan kurangnya visibilitas (informasi).
       </p>
       <p>
-        Akibatnya, pabrik (<strong>Factory</strong>) mengalami lonjakan pesanan yang paling tajam. Inilah yang disebut dengan <strong>Bullwhip Effect (Efek Cambuk)</strong>.
+        Akibatnya, entitas di hulu (seperti Factory) mengalami lonjakan pesanan yang paling tajam. Inilah yang disebut dengan <strong>Bullwhip Effect (Efek Cambuk)</strong>.
       </p>
     </div>
     
@@ -44,132 +62,152 @@
   </div>
 
   <script>
-    const historyStr = sessionStorage.getItem('gameHistory');
-    if (!historyStr) {
-      alert('Data permainan tidak ditemukan!');
-      window.location.href = 'index.html';
-    }
+    const gameMode = sessionStorage.getItem('gameMode') || 'linear';
 
-    const historyData = JSON.parse(historyStr);
-    // historyData = [
-    //   { Customer: 4, Retailer: 4, Wholesaler: 4, Distributor: 4, Factory: 4 },
-    //   ...
-    // ]
-
-    const rounds = historyData.map((_, i) => 'Ronde ' + (i + 1));
-    
-    // Extract datasets
-    const customerData = historyData.map(r => r.Customer || 0);
-    const retailerData = historyData.map(r => r.Retailer || 0);
-    const wholesalerData = historyData.map(r => r.Wholesaler || 0);
-    const distributorData = historyData.map(r => r.Distributor || 0);
-    const factoryData = historyData.map(r => r.Factory || 0);
-
-    const ctx = document.getElementById('bullwhipChart').getContext('2d');
-    
-    // Smooth lines with tension for a nice visual
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: rounds,
-        datasets: [
-          {
-            label: 'Customer Demand',
-            data: customerData,
-            borderColor: '#10B981', // Green
-            backgroundColor: '#10B981',
-            tension: 0.3,
-            borderWidth: 3,
-            borderDash: [5, 5] // Dashed to indicate it's the source
-          },
-          {
-            label: 'Retailer Order',
-            data: retailerData,
-            borderColor: '#3B82F6', // Blue
-            backgroundColor: '#3B82F6',
-            tension: 0.3,
-            borderWidth: 3
-          },
-          {
-            label: 'Wholesaler Order',
-            data: wholesalerData,
-            borderColor: '#F59E0B', // Yellow
-            backgroundColor: '#F59E0B',
-            tension: 0.3,
-            borderWidth: 3
-          },
-          {
-            label: 'Distributor Order',
-            data: distributorData,
-            borderColor: '#8B5CF6', // Purple
-            backgroundColor: '#8B5CF6',
-            tension: 0.3,
-            borderWidth: 3
-          },
-          {
-            label: 'Factory Order',
-            data: factoryData,
-            borderColor: '#EF4444', // Red (most intense)
-            backgroundColor: '#EF4444',
-            tension: 0.3,
-            borderWidth: 5 // Thicker line to show the huge variation
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              usePointStyle: true,
-              padding: 20,
-              font: {
-                size: 14,
-                family: "'Inter', sans-serif"
-              }
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            titleColor: '#1f2937',
-            bodyColor: '#4b5563',
-            borderColor: '#e5e7eb',
-            borderWidth: 1,
-            padding: 12,
-            boxPadding: 6
-          }
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Jumlah Pesanan (Unit)',
-              font: {
-                size: 14,
-                weight: 'bold'
-              }
-            },
-            grid: {
-              color: '#f3f4f6'
-            }
-          },
-          x: {
-            grid: {
-              display: false
-            }
-          }
-        }
+    if (gameMode === 'linear') {
+      document.getElementById('linearChartContainer').classList.remove('hidden');
+      document.getElementById('networkChartContainer').classList.add('hidden');
+      
+      const historyStr = sessionStorage.getItem('gameHistory');
+      if (!historyStr) {
+        alert('Data permainan tidak ditemukan!');
+        window.location.href = 'index.html';
       }
-    });
+
+      const historyData = JSON.parse(historyStr);
+      const rounds = historyData.map((_, i) => 'Ronde ' + (i + 1));
+      
+      const customerData = historyData.map(r => r.Customer || 0);
+      const retailerData = historyData.map(r => r.Retailer || 0);
+      const wholesalerData = historyData.map(r => r.Wholesaler || 0);
+      const distributorData = historyData.map(r => r.Distributor || 0);
+      const factoryData = historyData.map(r => r.Factory || 0);
+
+      const ctx = document.getElementById('bullwhipChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: rounds,
+          datasets: [
+            { label: 'Customer Demand', data: customerData, borderColor: '#10B981', backgroundColor: '#10B981', tension: 0.3, borderWidth: 3, borderDash: [5, 5] },
+            { label: 'Retailer Order', data: retailerData, borderColor: '#3B82F6', backgroundColor: '#3B82F6', tension: 0.3, borderWidth: 3 },
+            { label: 'Wholesaler Order', data: wholesalerData, borderColor: '#F59E0B', backgroundColor: '#F59E0B', tension: 0.3, borderWidth: 3 },
+            { label: 'Distributor Order', data: distributorData, borderColor: '#8B5CF6', backgroundColor: '#8B5CF6', tension: 0.3, borderWidth: 3 },
+            { label: 'Factory Order', data: factoryData, borderColor: '#EF4444', backgroundColor: '#EF4444', tension: 0.3, borderWidth: 5 }
+          ]
+        },
+        options: { responsive: true, plugins: { tooltip: { mode: 'index', intersect: false } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } }
+      });
+
+    } else if (gameMode === 'network') {
+      document.getElementById('linearChartContainer').classList.add('hidden');
+      document.getElementById('networkChartContainer').classList.remove('hidden');
+      document.getElementById('pageTitle').innerText = 'Analisis Jaringan: Biaya & Bullwhip';
+      document.getElementById('pageSubtitle').innerText = 'Lihat dampak dari topologi matriks dan keputusan moda transportasi terhadap Total Biaya.';
+
+      const historyStr = sessionStorage.getItem('networkHistory');
+      if (!historyStr) {
+        alert('Data permainan tidak ditemukan!');
+        window.location.href = 'index.html';
+      }
+
+      const nodes = JSON.parse(historyStr);
+      
+      // Get length from any node
+      const numRounds = nodes['Factory'].history.length;
+      const rounds = Array.from({length: numRounds}, (_, i) => 'Ronde ' + (i + 1));
+      
+      function getTotalOrder(historyArr) {
+        return historyArr.map(h => {
+          let sum = 0;
+          if (h.orderPlaced && typeof h.orderPlaced === 'object') {
+            Object.values(h.orderPlaced).forEach(v => sum += v);
+          }
+          return sum;
+        });
+      }
+
+      const r1Order = getTotalOrder(nodes['Retailer 1'].history);
+      const r2Order = getTotalOrder(nodes['Retailer 2'].history);
+      const r3Order = getTotalOrder(nodes['Retailer 3'].history);
+      const r4Order = getTotalOrder(nodes['Retailer 4'].history);
+
+      const wh1Order = getTotalOrder(nodes['Warehouse 1'].history);
+      const wh2Order = getTotalOrder(nodes['Warehouse 2'].history);
+      const wh3Order = getTotalOrder(nodes['Warehouse 3'].history);
+
+      const w1Order = getTotalOrder(nodes['Wholesale 1'].history);
+      const w2Order = getTotalOrder(nodes['Wholesale 2'].history);
+      const fOrder = getTotalOrder(nodes['Factory'].history);
+
+      // Order Chart 1: Retailers & Warehouses
+      const ctxOrder1 = document.getElementById('networkOrderChart1').getContext('2d');
+      new Chart(ctxOrder1, {
+        type: 'line',
+        data: {
+          labels: rounds,
+          datasets: [
+            { label: 'Retailer 1', data: r1Order, borderColor: '#60A5FA', tension: 0.3 },
+            { label: 'Retailer 2', data: r2Order, borderColor: '#3B82F6', tension: 0.3 },
+            { label: 'Retailer 3', data: r3Order, borderColor: '#2563EB', tension: 0.3 },
+            { label: 'Retailer 4', data: r4Order, borderColor: '#1D4ED8', tension: 0.3 },
+            { label: 'Warehouse 1', data: wh1Order, borderColor: '#FCA5A5', tension: 0.3, borderDash: [5,5] },
+            { label: 'Warehouse 2', data: wh2Order, borderColor: '#EF4444', tension: 0.3, borderDash: [5,5] },
+            { label: 'Warehouse 3', data: wh3Order, borderColor: '#B91C1C', tension: 0.3, borderDash: [5,5] },
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'right' }, tooltip: { mode: 'index', intersect: false } } }
+      });
+
+      // Order Chart 2: Wholesales & Factory
+      const ctxOrder2 = document.getElementById('networkOrderChart2').getContext('2d');
+      new Chart(ctxOrder2, {
+        type: 'line',
+        data: {
+          labels: rounds,
+          datasets: [
+            { label: 'Wholesale 1', data: w1Order, borderColor: '#FBBF24', tension: 0.3 },
+            { label: 'Wholesale 2', data: w2Order, borderColor: '#D97706', tension: 0.3 },
+            { label: 'Factory', data: fOrder, borderColor: '#4C1D95', tension: 0.3, borderWidth: 4 }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'right' }, tooltip: { mode: 'index', intersect: false } } }
+      });
+
+      // Cost Chart (Sum by Echelon)
+      const retailerCost = rounds.map((_, i) => nodes['Retailer 1'].history[i].cost + nodes['Retailer 2'].history[i].cost + nodes['Retailer 3'].history[i].cost + nodes['Retailer 4'].history[i].cost);
+      const warehouseCost = rounds.map((_, i) => nodes['Warehouse 1'].history[i].cost + nodes['Warehouse 2'].history[i].cost + nodes['Warehouse 3'].history[i].cost);
+      const wholesaleCost = rounds.map((_, i) => nodes['Wholesale 1'].history[i].cost + nodes['Wholesale 2'].history[i].cost);
+      const factoryCost = rounds.map((_, i) => nodes['Factory'].history[i].cost);
+
+      const ctxCost = document.getElementById('networkCostChart').getContext('2d');
+      new Chart(ctxCost, {
+        type: 'line',
+        data: {
+          labels: rounds,
+          datasets: [
+            { label: 'Retailers Total Cost', data: retailerCost, borderColor: '#3B82F6', tension: 0.3, borderWidth: 3 },
+            { label: 'Warehouses Total Cost', data: warehouseCost, borderColor: '#EF4444', tension: 0.3, borderWidth: 3 },
+            { label: 'Wholesales Total Cost', data: wholesaleCost, borderColor: '#F59E0B', tension: 0.3, borderWidth: 3 },
+            { label: 'Factory Cost', data: factoryCost, borderColor: '#8B5CF6', tension: 0.3, borderWidth: 4 }
+          ]
+        },
+        options: { responsive: true, plugins: { tooltip: { mode: 'index', intersect: false } }, interaction: { mode: 'nearest', axis: 'x', intersect: false } }
+      });
+
+      document.getElementById('explanationText').innerHTML = `
+        <h3 class="font-bold text-xl mb-3 flex items-center">
+          <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Multi-Eselon & Biaya Transportasi
+        </h3>
+        <p class="mb-4">
+          Pada mode jaringan matriks ini, kita bisa melihat bahwa memilih <strong>Moda Transportasi Ekspres</strong> akan mempercepat pengiriman dan mengurangi penalti Backlog ($2/unit), namun akan meningkatkan Biaya Transportasi ($3/unit) dibandingkan Reguler ($1/unit).
+        </p>
+        <p>
+          Selain efek bullwhip, topologi meshed memungkinkan alokasi pasokan secara proporsional. Namun, jika terjadi kepanikan pesanan dari bawah, maka Factory tetap akan mengalami eskalasi permintaan eksponensial.
+        </p>
+      `;
+    }
   </script>
 </body>
 </html>

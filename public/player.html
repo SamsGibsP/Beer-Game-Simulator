@@ -12,14 +12,35 @@
   <div class="max-w-xl w-full">
     
     <!-- Header -->
-    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-500 text-center">
+    <div class="bg-white rounded-t-2xl shadow p-6 border-b-4 border-blue-500 text-center relative">
       <h1 class="text-3xl font-black text-gray-800" id="roleDisplay">Loading Role...</h1>
-      <p class="text-gray-500 mt-2 font-medium">Room: <span id="roomDisplay" class="text-blue-600 font-bold tracking-widest">---</span></p>
+      <p class="text-gray-500 mt-2 font-medium">Room: <span id="roomDisplay" class="text-blue-600 font-bold tracking-widest">---</span> | Mode: <span id="modeDisplay" class="capitalize">...</span></p>
+      
+      <!-- Timer Display -->
+      <div id="timerContainer" class="hidden absolute top-4 right-4 bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full border-2 border-red-300">
+        <span id="timerDisplay">40</span>s
+      </div>
     </div>
 
     <!-- Main Content -->
     <div class="bg-white rounded-b-2xl shadow p-6 sm:p-10 text-center min-h-[300px] flex flex-col justify-center">
       
+      <!-- Network State Dashboard (Hidden in Linear Mode) -->
+      <div id="networkDashboard" class="hidden mb-6 grid grid-cols-3 gap-4">
+        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200">
+          <p class="text-xs text-blue-600 font-bold uppercase">Inventory</p>
+          <p class="text-2xl font-black text-blue-800" id="invDisplay">12</p>
+        </div>
+        <div class="bg-red-50 p-4 rounded-xl border border-red-200">
+          <p class="text-xs text-red-600 font-bold uppercase">Total Backlog</p>
+          <p class="text-2xl font-black text-red-800" id="backlogDisplay">0</p>
+        </div>
+        <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+          <p class="text-xs text-yellow-600 font-bold uppercase">Cost ($)</p>
+          <p class="text-2xl font-black text-yellow-800" id="costDisplay">0</p>
+        </div>
+      </div>
+
       <!-- Waiting Screen -->
       <div id="waitingScreen">
         <div class="animate-pulse flex flex-col items-center">
@@ -34,16 +55,22 @@
       <!-- Action Screen -->
       <div id="actionScreen" class="hidden">
         
-        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8">
+        <div id="linearIncomingOrder" class="bg-red-50 border-2 border-red-200 rounded-xl p-6 mb-8 hidden">
           <p class="text-red-800 font-semibold mb-1 uppercase tracking-wider text-sm">Pesanan Masuk (Incoming Order)</p>
           <div class="text-5xl font-black text-red-600 my-2" id="incomingAmount">0</div>
           <p class="text-red-500 text-sm">Dari: <span id="incomingFrom" class="font-bold">Customer</span></p>
         </div>
 
-        <div class="mb-4 text-left">
-          <label class="block text-gray-700 font-bold mb-2 text-lg">Pesanan Anda ke Rantai Berikutnya:</label>
-          <p class="text-sm text-gray-500 mb-4">Ingat: Jika Anda memesan terlalu banyak/sedikit, akan terjadi efek cambuk!</p>
-          <input type="number" id="orderInput" class="w-full border-2 border-gray-300 p-4 rounded-xl text-3xl font-bold text-center focus:outline-none focus:border-blue-500 shadow-inner" placeholder="0" min="0">
+        <div class="mb-4 text-left" id="orderInputsContainer">
+          <!-- Dynamic Order Inputs Go Here -->
+        </div>
+
+        <div id="transportSection" class="mb-6 text-left hidden">
+          <label class="block text-gray-700 font-bold mb-2 text-lg">Moda Transportasi (Material Masuk):</label>
+          <select id="transportInput" class="w-full border-2 border-gray-300 p-4 rounded-xl text-lg font-bold focus:outline-none focus:border-blue-500">
+            <option value="Regular">Truk Reguler (Lead time 2 ronde, Biaya $1/unit)</option>
+            <option value="Express">Ekspres (Lead time 1 ronde, Biaya $3/unit)</option>
+          </select>
         </div>
 
         <button onclick="submitOrder()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-4 rounded-xl transition duration-200 text-xl shadow-lg mt-4 transform hover:scale-105">
@@ -57,7 +84,6 @@
   <script>
     const socket = io();
     
-    // Parse URL params
     const urlParams = new URLSearchParams(window.location.search);
     const roomCode = urlParams.get('room');
     const role = urlParams.get('role');
@@ -72,8 +98,10 @@
     document.getElementById('roomDisplay').innerText = roomCode;
 
     let myTurn = false;
+    let gameMode = 'linear';
+    let myParents = [];
+    let countdownInterval = null;
 
-    // Join room
     socket.emit('joinRoom', { roomCode, role, playerName });
 
     socket.on('error', (msg) => {
@@ -82,42 +110,134 @@
     });
 
     socket.on('joined', (data) => {
-      console.log('Successfully joined as ' + data.role);
+      gameMode = data.mode;
+      document.getElementById('modeDisplay').innerText = gameMode;
+      if (gameMode === 'network') {
+        myParents = data.parents || [];
+        document.getElementById('transportSection').classList.remove('hidden');
+        document.getElementById('networkDashboard').classList.remove('hidden');
+        buildDynamicInputs();
+      } else {
+        buildLinearInput();
+      }
     });
 
-    socket.on('gameStarted', ({ round }) => {
+    function buildDynamicInputs() {
+      const container = document.getElementById('orderInputsContainer');
+      container.innerHTML = `<label class="block text-gray-700 font-bold mb-2 text-lg">Pesanan Anda ke Hulu:</label>`;
+      
+      myParents.forEach(p => {
+        container.innerHTML += `
+          <div class="mb-3 flex items-center justify-between">
+            <span class="text-gray-600 font-semibold flex-1">ke ${p}:</span>
+            <input type="number" id="orderInput_${p}" class="w-32 border-2 border-gray-300 p-3 rounded-xl text-2xl font-bold text-center focus:outline-none focus:border-blue-500 shadow-inner" placeholder="0" min="0" value="0">
+          </div>
+        `;
+      });
+    }
+
+    function buildLinearInput() {
+      const container = document.getElementById('orderInputsContainer');
+      container.innerHTML = `
+        <label class="block text-gray-700 font-bold mb-2 text-lg">Pesanan Anda ke Hulu:</label>
+        <input type="number" id="orderInput_linear" class="w-full border-2 border-gray-300 p-4 rounded-xl text-3xl font-bold text-center focus:outline-none focus:border-blue-500 shadow-inner" placeholder="0" min="0">
+      `;
+    }
+
+    // --- TIMER LOGIC ---
+    socket.on('timerStart', ({ duration }) => {
+      let timeLeft = duration;
+      const tc = document.getElementById('timerContainer');
+      const td = document.getElementById('timerDisplay');
+      tc.classList.remove('hidden');
+      td.innerText = timeLeft;
+      
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        timeLeft--;
+        td.innerText = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+    });
+
+    function stopTimer() {
+      if (countdownInterval) clearInterval(countdownInterval);
+      document.getElementById('timerContainer').classList.add('hidden');
+    }
+
+    // --- LINEAR MODE EVENTS ---
+    socket.on('gameStarted', ({ round, mode }) => {
       setWaiting('Game Dimulai!', 'Ronde ' + round + '. Menunggu giliran Anda...');
     });
 
-    socket.on('newRound', ({ round }) => {
+    socket.on('newRound', ({ round, mode }) => {
       setWaiting('Ronde ' + round, 'Menunggu giliran Anda...');
     });
 
     socket.on('turnUpdate', ({ turn }) => {
-      if (turn === role) {
-        // Not handled here. Handled by incomingOrder to ensure we get the amount.
-        // Except if something goes wrong, but incomingOrder is sent right before turnUpdate.
-      } else if (turn === 'RoundComplete') {
+      if (turn === 'RoundComplete') {
         setWaiting('Ronde Selesai', 'Menunggu Host melanjutkan ke ronde berikutnya...');
-      } else {
+      } else if (turn !== role) {
         setWaiting('Giliran ' + turn, 'Pesanan sedang merambat...');
       }
     });
 
     socket.on('incomingOrder', ({ amount, from }) => {
-      // It's my turn!
       myTurn = true;
       document.getElementById('waitingScreen').classList.add('hidden');
       document.getElementById('actionScreen').classList.remove('hidden');
+      document.getElementById('linearIncomingOrder').classList.remove('hidden');
       
       document.getElementById('incomingAmount').innerText = amount;
       document.getElementById('incomingFrom').innerText = from;
       
-      // Focus input for speed
-      document.getElementById('orderInput').value = '';
-      setTimeout(() => document.getElementById('orderInput').focus(), 100);
+      const inp = document.getElementById('orderInput_linear');
+      inp.value = '';
+      setTimeout(() => inp.focus(), 100);
     });
 
+    // --- NETWORK MODE EVENTS ---
+    socket.on('turnUpdateNetwork', ({ round }) => {
+      myTurn = true;
+      document.getElementById('waitingScreen').classList.add('hidden');
+      document.getElementById('actionScreen').classList.remove('hidden');
+      document.getElementById('linearIncomingOrder').classList.add('hidden');
+      
+      myParents.forEach(p => {
+        document.getElementById(`orderInput_${p}`).value = '';
+      });
+      if (myParents.length > 0) {
+        setTimeout(() => document.getElementById(`orderInput_${myParents[0]}`).focus(), 100);
+      }
+    });
+
+    socket.on('networkRoundComplete', ({ round, nodes }) => {
+      stopTimer();
+      setWaiting('Ronde ' + round + ' Selesai', 'Menunggu Host lanjut ke ronde berikutnya...');
+      
+      if (nodes[role]) {
+        document.getElementById('invDisplay').innerText = nodes[role].inventory;
+        // The backlog is an object, but server sends it. Wait, in server we calculate totalBacklog in history?
+        // Let's sum up backlog directly from the object
+        let totalBacklog = 0;
+        Object.values(nodes[role].backlog).forEach(v => totalBacklog += v);
+        document.getElementById('backlogDisplay').innerText = totalBacklog;
+        document.getElementById('costDisplay').innerText = nodes[role].cost;
+      }
+    });
+
+    // Auto-pilot notification
+    socket.on('playerSubmitted', ({ role: submittedRole, auto }) => {
+      if (submittedRole === role && auto) {
+        // I was auto-submitted
+        stopTimer();
+        setWaiting('Waktu Habis!', 'Pesanan Anda disubmit otomatis (Auto-Pilot).');
+      }
+    });
+
+    // --- SHARED ---
     function setWaiting(title, subtitle) {
       myTurn = false;
       document.getElementById('actionScreen').classList.add('hidden');
@@ -128,18 +248,33 @@
 
     function submitOrder() {
       if (!myTurn) return;
-      const val = document.getElementById('orderInput').value;
-      if (val === '') {
-        alert('Masukkan jumlah pesanan!');
-        return;
-      }
       
-      socket.emit('submitOrder', { roomCode, orderAmount: val });
+      if (gameMode === 'linear') {
+        const val = document.getElementById('orderInput_linear').value;
+        if (val === '') { alert('Masukkan jumlah pesanan!'); return; }
+        socket.emit('submitOrder', { roomCode, orderAmount: val });
+      } else {
+        const orderAmount = {};
+        for (const p of myParents) {
+          const val = document.getElementById(`orderInput_${p}`).value;
+          if (val === '') { alert(`Masukkan pesanan ke ${p}!`); return; }
+          orderAmount[p] = parseInt(val) || 0;
+        }
+        const tMode = document.getElementById('transportInput').value;
+        socket.emit('submitOrderNetwork', { roomCode, role, orderAmount, transportMode: tMode });
+      }
+
+      stopTimer();
       setWaiting('Pesanan Terkirim!', 'Menunggu pemain lain...');
     }
 
-    socket.on('gameFinished', ({ history }) => {
-      sessionStorage.setItem('gameHistory', JSON.stringify(history));
+    socket.on('gameFinished', ({ history, nodes, mode }) => {
+      if (mode === 'linear') {
+        sessionStorage.setItem('gameHistory', JSON.stringify(history));
+      } else {
+        sessionStorage.setItem('networkHistory', JSON.stringify(nodes));
+      }
+      sessionStorage.setItem('gameMode', mode);
       window.location.href = 'result.html';
     });
   </script>
