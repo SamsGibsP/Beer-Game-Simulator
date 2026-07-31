@@ -1,4 +1,3 @@
-apakah baik jika saya menggunakan ini?
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.png">
